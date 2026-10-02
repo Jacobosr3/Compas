@@ -33,6 +33,21 @@ if (app.Environment.IsDevelopment())
                 new HttpMethod(ctx.Request.Method),
                 targetUri);
 
+            // Copiar el body del request (necesario para POST/PUT)
+            if (ctx.Request.ContentLength > 0 || ctx.Request.Headers.ContainsKey("Transfer-Encoding"))
+            {
+                request.Content = new StreamContent(ctx.Request.Body);
+            }
+
+            // Copiar todos los headers del request original
+            foreach (var header in ctx.Request.Headers)
+            {
+                if (!request.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray()))
+                {
+                    request.Content?.Headers.TryAddWithoutValidation(header.Key, header.Value.ToArray());
+                }
+            }
+
             using var response = await client.SendAsync(
                 request,
                 HttpCompletionOption.ResponseHeadersRead,
