@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "Compas Desarrollo",
+    "Projects": [
+      {
+        "Path": "src\\Compas.Api\\Compas.Api.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Compas.Server\\Compas.Server.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

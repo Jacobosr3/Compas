@@ -1,0 +1,13 @@
+# .NET
+bin/
+obj/
+*.db
+*.db-shm
+*.db-wal
+.vs/
+*.user
+appsettings.Production.json
+
+# Frontend (se regeneran con npm install / npm run build)
+src/Compas.Api/ClientApp/node_modules/
+src/Compas.Api/ClientApp/dist/
