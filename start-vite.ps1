@@ -1,15 +1,19 @@
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 
 function Start-ViteIfNeeded($port, $path) {
+
     $running = Get-NetTCPConnection -LocalPort $port -State Listen -ErrorAction SilentlyContinue
 
-    if (-not $running) {
-        Start-Process "cmd" -ArgumentList "/k", "cd /d `"$path`" && npm run dev"
-        Write-Host "Vite iniciado en puerto $port" -ForegroundColor Green
-    }
-    else {
+    if ($running) {
         Write-Host "Vite ya está ejecutándose en puerto $port" -ForegroundColor Yellow
+        return
     }
+
+    Start-Process "cmd.exe" `
+        -ArgumentList "/c", "cd /d `"$path`" && npm run dev" `
+        -WindowStyle Hidden
+
+    Write-Host "Vite iniciado en puerto $port" -ForegroundColor Green
 }
 
 Start-ViteIfNeeded 5173 "$root\src\Compas.Api\ClientApp"
@@ -21,6 +25,7 @@ $timeout = 30
 $elapsed = 0
 
 while ($elapsed -lt $timeout) {
+
     $vite5173 = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue
     $vite5174 = Get-NetTCPConnection -LocalPort 5174 -State Listen -ErrorAction SilentlyContinue
 

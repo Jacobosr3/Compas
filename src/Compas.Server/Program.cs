@@ -1,5 +1,10 @@
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Logging.AddFilter(
+    "System.Net.Http.HttpClient.vite",
+    LogLevel.Warning
+);
+
 builder.Services.AddHttpClient("vite", client =>
 {
     client.BaseAddress = new Uri("http://localhost:5174");

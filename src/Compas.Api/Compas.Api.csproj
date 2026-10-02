@@ -6,6 +6,9 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>Compas.Api</RootNamespace>
 		<InvariantGlobalization>true</InvariantGlobalization>
+
+		<!-- Fuerza a Visual Studio a ejecutar MSBuild al pulsar F5 -->
+		<DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -25,8 +28,12 @@
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
 	</ItemGroup>
 
-	<Target Name="StartVite" BeforeTargets="Build">
-		<Exec Command="powershell -ExecutionPolicy Bypass -File &quot;$(SolutionDir)start-vite.ps1&quot;" />
+	<Target Name="StartVite"
+			BeforeTargets="Build"
+			Condition="'$(DesignTimeBuild)' != 'true'">
+
+		<Exec Command="powershell.exe -ExecutionPolicy Bypass -File &quot;$(SolutionDir)start-vite.ps1&quot;" />
+
 	</Target>
 
 </Project>
