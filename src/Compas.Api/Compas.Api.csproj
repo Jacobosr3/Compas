@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
 	<PropertyGroup>
 		<TargetFramework>net9.0</TargetFramework>
@@ -9,7 +9,8 @@
 
 		<!-- Fuerza a Visual Studio a ejecutar MSBuild al pulsar F5 -->
 		<DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
-	</PropertyGroup>
+	  <UserSecretsId>79082263-02ac-4a1c-9d98-8872b0c7050d</UserSecretsId>
+  </PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
@@ -28,9 +29,7 @@
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
 	</ItemGroup>
 
-	<Target Name="StartVite"
-			BeforeTargets="Build"
-			Condition="'$(DesignTimeBuild)' != 'true'">
+	<Target Name="StartVite" BeforeTargets="Build" Condition="'$(DesignTimeBuild)' != 'true'">
 
 		<Exec Command="powershell.exe -ExecutionPolicy Bypass -File &quot;$(SolutionDir)start-vite.ps1&quot;" />
 

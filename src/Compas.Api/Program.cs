@@ -19,9 +19,15 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.Configure<PlanningOptions>(builder.Configuration.GetSection("Planning"));
 
 var dbProvider = builder.Configuration.GetValue<string>("Database:Provider") ?? "Sqlite";
+var usePostgres = string.Equals(dbProvider, "Postgres", StringComparison.OrdinalIgnoreCase);
+
+// Las fechas del modelo son DateTime sin Kind=UTC: columnas "timestamp" (sin zona horaria).
+if (usePostgres)
+    AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 builder.Services.AddDbContext<CompasDbContext>(options =>
 {
-    if (string.Equals(dbProvider, "Postgres", StringComparison.OrdinalIgnoreCase))
+    if (usePostgres)
         options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres"));
     else
         options.UseSqlite(builder.Configuration.GetConnectionString("Sqlite"));
@@ -44,8 +50,9 @@ builder.Services.AddHttpClient("vite", c =>
 
 var app = builder.Build();
 
-// Migraciones automáticas en desarrollo
-if (app.Environment.IsDevelopment())
+// Migraciones automáticas en desarrollo (solo SQLite; el esquema de Postgres/Supabase
+// se gestiona con migraciones de Supabase, las de EF están generadas para SQLite).
+if (app.Environment.IsDevelopment() && !usePostgres)
 {
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<CompasDbContext>();
