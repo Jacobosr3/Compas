@@ -4,7 +4,7 @@ import { ConnectionBanner } from "../components/ConnectionBanner";
 import { useApiData } from "../hooks/useApiData";
 import { plannerApi, projectsApi, workItemsApi } from "../api";
 import type { PlanEntryDto } from "../api/types";
-import { fmtDateLong, fmtDuration, fmtTime, priorityLabel } from "../utils/format";
+import { fmtDateLong, fmtDuration, totalMinutes, fmtTime, priorityLabel } from "../utils/format";
 
 export function TodayPage() {
   const plan = useApiData(() => plannerApi.today(), []);
@@ -92,7 +92,7 @@ export function TodayPage() {
               >
                 <span>{t.title}</span>
                 <span className="mono" style={{ color: "var(--muted-2)", fontSize: 10.5 }}>
-                  {t.estimatedMinutes}m
+                  {fmtDuration(totalMinutes(t))}
                 </span>
               </div>
             ))
@@ -174,6 +174,7 @@ function NowCard({
       description: item.description,
       projectId: item.projectId,
       priority: item.priority,
+      estimatedHours: item.estimatedHours,
       estimatedMinutes: item.estimatedMinutes,
       dueDate: item.dueDate,
       status: "InProgress",

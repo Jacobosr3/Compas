@@ -7,6 +7,7 @@ public record WorkItemDto(
     int? ProjectId,
     string? ProjectName,
     string Priority,
+    int EstimatedHours,
     int EstimatedMinutes,
     DateTime? DueDate,
     string Status,
@@ -18,6 +19,7 @@ public record CreateWorkItemDto(
     string? Description,
     int? ProjectId,
     string Priority,
+    int EstimatedHours,
     int EstimatedMinutes,
     DateTime? DueDate);
 
@@ -26,6 +28,7 @@ public record UpdateWorkItemDto(
     string? Description,
     int? ProjectId,
     string Priority,
+    int EstimatedHours,
     int EstimatedMinutes,
     DateTime? DueDate,
     string Status);

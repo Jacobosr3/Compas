@@ -3,8 +3,18 @@
 
 export type Priority = "Low" | "Medium" | "High" | "Urgent";
 export type ProjectStatus = "Active" | "OnHold" | "Completed" | "Archived";
-export type WorkItemStatus = "Pending" | "Scheduled" | "InProgress" | "Completed" | "Cancelled";
-export type PlanEntryKind = "Task" | "CalendarEvent" | "Break" | "Free";
+export type WorkItemStatus =
+  | "Pending"
+  | "Scheduled"
+  | "InProgress"
+  | "Completed"
+  | "Cancelled";
+
+export type PlanEntryKind =
+  | "Task"
+  | "CalendarEvent"
+  | "Break"
+  | "Free";
 
 export interface ProjectDto {
   id: number;
@@ -40,6 +50,7 @@ export interface WorkItemDto {
   projectId: number | null;
   projectName: string | null;
   priority: Priority;
+  estimatedHours: number;
   estimatedMinutes: number;
   dueDate: string | null;
   status: WorkItemStatus;
@@ -52,6 +63,7 @@ export interface CreateWorkItemDto {
   description?: string | null;
   projectId?: number | null;
   priority: Priority;
+  estimatedHours: number;
   estimatedMinutes: number;
   dueDate?: string | null;
 }
@@ -61,6 +73,7 @@ export interface UpdateWorkItemDto {
   description: string | null;
   projectId: number | null;
   priority: Priority;
+  estimatedHours: number;
   estimatedMinutes: number;
   dueDate: string | null;
   status: WorkItemStatus;

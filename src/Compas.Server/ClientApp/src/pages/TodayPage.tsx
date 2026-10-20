@@ -4,12 +4,18 @@ import { ConnectionBanner } from "../components/ConnectionBanner";
 import { useApiData } from "../hooks/useApiData";
 import { plannerApi, projectsApi, workItemsApi } from "../api";
 import type { PlanEntryDto } from "../api/types";
-import { fmtDateLong, fmtDuration, fmtTime, priorityLabel } from "../utils/format";
+import { fmtDateLong, fmtDuration, totalMinutes, fmtTime, priorityLabel } from "../utils/format";
+
+function greeting(d: Date): string {
+  const h = d.getHours();
+  return h < 6 ? "Buenas noches" : h < 13 ? "Buenos días" : h < 21 ? "Buenas tardes" : "Buenas noches";
+}
 
 export function TodayPage() {
   const plan = useApiData(() => plannerApi.today(), []);
   const projects = useApiData(() => projectsApi.list(), []);
   const inbox = useApiData(() => workItemsApi.inbox(), []);
+  const [quickTitle, setQuickTitle] = useState("");
 
   const status = plan.status === "error" || projects.status === "error" || inbox.status === "error"
     ? "error"
@@ -23,81 +29,144 @@ export function TodayPage() {
     inbox.reload();
   }
 
+  async function quickAdd() {
+    const title = quickTitle.trim();
+    if (!title) return;
+    await runAction(() => workItemsApi.create({ title, priority: "Medium", estimatedHours: 0, estimatedMinutes: 30 }), () => {
+      setQuickTitle("");
+      inbox.reload();
+    });
+  }
+
+  const now = new Date();
+  const entries = plan.data?.entries ?? [];
+  const tasks = entries.filter((e) => e.kind === "Task");
+  const plannedMin = tasks.reduce((n, e) => n + Math.round((new Date(e.end).getTime() - new Date(e.start).getTime()) / 60000), 0);
+  const inboxMin = (inbox.data ?? []).reduce((n, t) => n + totalMinutes(t), 0);
+
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
+  const monthName = now.toLocaleString("es-ES", { month: "long" });
+
   return (
-    <main className="main">
-      <Topbar title="Hola" subtitle={fmtDateLong(new Date())} status={status} onRefresh={reloadAll} />
+    <main className="main main-wide">
+      <Topbar title={greeting(now)} subtitle={fmtDateLong(now)} status={status} onRefresh={reloadAll} />
 
       {status === "error" && <ConnectionBanner message={plan.error || projects.error || inbox.error || ""} />}
 
-      <NowCard entry={plan.data?.nowEntry ?? null} loading={plan.status === "loading"} onChanged={reloadAll} />
-
-      <div className="section-head">
-        <h2>Tu día</h2>
-        <div className="actions-inline">
-          <button className="link-btn" onClick={() => runAction(() => plannerApi.generate(), reloadAll)}>
-            Generar plan del día
-          </button>
-          <button className="link-btn" onClick={() => runAction(() => plannerApi.replan(), reloadAll)}>
-            Replanificar desde ahora
-          </button>
+      <div className="stat-row">
+        <div className="stat">
+          <span className="stat-ico a">◷</span>
+          <div>
+            <div className="stat-num">{tasks.length}</div>
+            <div className="stat-lbl">tareas hoy · {fmtDuration(plannedMin)}</div>
+          </div>
+        </div>
+        <div className="stat">
+          <span className="stat-ico b">▤</span>
+          <div>
+            <div className="stat-num">{inbox.data?.length ?? "—"}</div>
+            <div className="stat-lbl">en bandeja · {fmtDuration(inboxMin)}</div>
+          </div>
+        </div>
+        <div className="stat">
+          <span className="stat-ico c">◆</span>
+          <div>
+            <div className="stat-num">{projects.data?.length ?? "—"}</div>
+            <div className="stat-lbl">proyectos activos</div>
+          </div>
         </div>
       </div>
 
-      <Timeline entries={plan.data?.entries ?? []} loading={plan.status === "loading"} />
+      <div className="today-grid">
+        <div className="today-main">
+          <NowCard entry={plan.data?.nowEntry ?? null} loading={plan.status === "loading"} onChanged={reloadAll} />
 
-      <div className="section-head">
-        <h2>Resumen</h2>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div className="card">
-          <h3>
-            Proyectos <span>{projects.data ? `${projects.data.length} activo(s)` : "—"}</span>
-          </h3>
-          {!projects.data || projects.data.length === 0 ? (
-            <div className="empty-mini">Aún no tienes proyectos.</div>
-          ) : (
-            projects.data.slice(0, 4).map((p) => (
-              <div key={p.id} style={{ marginBottom: 12 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, marginBottom: 6 }}>
-                  <span style={{ fontWeight: 500 }}>{p.name}</span>
-                  <span className="mono" style={{ color: "var(--muted)", fontSize: 11.5 }}>
-                    {Math.round(p.progressPercent)}%
-                  </span>
-                </div>
-                <div className="bar">
-                  <i style={{ width: `${Math.round(p.progressPercent)}%` }} />
-                </div>
-              </div>
-            ))
-          )}
+          <div className="section-head">
+            <h2>Tu día</h2>
+            <div className="actions-inline">
+              <button className="link-btn" onClick={() => runAction(() => plannerApi.generate(), reloadAll)}>
+                Generar plan del día
+              </button>
+              <button className="link-btn" onClick={() => runAction(() => plannerApi.replan(), reloadAll)}>
+                Replanificar desde ahora
+              </button>
+            </div>
+          </div>
+          <Timeline entries={entries} loading={plan.status === "loading"} />
         </div>
 
-        <div className="card">
-          <h3>
-            Bandeja <span>{inbox.data ? `${inbox.data.length} sin asignar` : "—"}</span>
-          </h3>
-          {!inbox.data || inbox.data.length === 0 ? (
-            <div className="empty-mini">La bandeja está vacía.</div>
-          ) : (
-            inbox.data.slice(0, 5).map((t) => (
-              <div
-                key={t.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "8px 0",
-                  borderBottom: "1px solid var(--line)",
-                  fontSize: 12.5,
-                }}
-              >
-                <span>{t.title}</span>
-                <span className="mono" style={{ color: "var(--muted-2)", fontSize: 10.5 }}>
-                  {t.estimatedMinutes}m
-                </span>
-              </div>
-            ))
-          )}
-        </div>
+        <aside className="today-side">
+          <div className="card glass">
+            <h3>
+              Proyectos <span>{projects.data ? `${projects.data.length} activos` : "—"}</span>
+            </h3>
+            {!projects.data || projects.data.length === 0 ? (
+              <div className="empty-mini">Aún no tienes proyectos.</div>
+            ) : (
+              projects.data.slice(0, 5).map((p) => {
+                const pct = Math.round(p.progressPercent);
+                return (
+                  <div key={p.id} className="proj-row" style={{ ["--c" as string]: p.colorHex }}>
+                    <div className="proj-ring" style={{ background: `conic-gradient(var(--c) ${pct * 3.6}deg, var(--panel-raised) 0)` }}>
+                      <span>{pct}%</span>
+                    </div>
+                    <div className="proj-info">
+                      <div className="proj-name">{p.name}</div>
+                      <div className="proj-sub">
+                        {p.completedWorkItems}/{p.totalWorkItems} tareas
+                        {p.targetDate ? ` · ${new Date(p.targetDate).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}` : ""}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <div className="card glass">
+            <h3>
+              Bandeja <span>{inbox.data ? `${inbox.data.length} sin asignar` : "—"}</span>
+            </h3>
+            {!inbox.data || inbox.data.length === 0 ? (
+              <div className="empty-mini">La bandeja está vacía.</div>
+            ) : (
+              inbox.data.slice(0, 5).map((t) => (
+                <div key={t.id} className="inbox-row">
+                  <span className="inbox-dot" />
+                  <span className="inbox-title">{t.title}</span>
+                  <span className="mono inbox-est">{fmtDuration(totalMinutes(t))}</span>
+                </div>
+              ))
+            )}
+            <div className="quick-add">
+              <input
+                placeholder="Nueva tarea…"
+                value={quickTitle}
+                onChange={(e) => setQuickTitle(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && quickAdd()}
+              />
+              <button onClick={quickAdd}>Añadir</button>
+            </div>
+          </div>
+
+          <div className="card glass">
+            <h3 style={{ textTransform: "capitalize" }}>{monthName}</h3>
+            <div className="mini-cal">
+              {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
+                <span key={d} className="d" style={{ fontWeight: 600 }}>{d}</span>
+              ))}
+              {Array.from({ length: firstDayOfWeek }).map((_, i) => (
+                <span key={`pad-${i}`} className="d pad" />
+              ))}
+              {Array.from({ length: daysInMonth }).map((_, i) => (
+                <span key={i} className={"d" + (i + 1 === now.getDate() ? " today" : "")}>{i + 1}</span>
+              ))}
+            </div>
+          </div>
+        </aside>
       </div>
     </main>
   );
@@ -174,6 +243,7 @@ function NowCard({
       description: item.description,
       projectId: item.projectId,
       priority: item.priority,
+      estimatedHours: item.estimatedHours,
       estimatedMinutes: item.estimatedMinutes,
       dueDate: item.dueDate,
       status: "InProgress",

@@ -57,6 +57,10 @@ public class WorkItemsController : ControllerBase
     {
         if (!Enum.TryParse<Priority>(dto.Priority, ignoreCase: true, out var priority))
             return BadRequest($"Prioridad no válida: {dto.Priority}");
+        if (ValidateEstimate(dto.EstimatedHours, dto.EstimatedMinutes) is { } estimateError)
+            return BadRequest(estimateError);
+
+        var totalMinutes = dto.EstimatedHours * 60 + dto.EstimatedMinutes;
 
         var item = new WorkItem
         {
@@ -64,7 +68,7 @@ public class WorkItemsController : ControllerBase
             Description = dto.Description,
             ProjectId = dto.ProjectId,
             Priority = priority,
-            EstimatedMinutes = dto.EstimatedMinutes <= 0 ? 30 : dto.EstimatedMinutes,
+            EstimatedMinutes = totalMinutes <= 0 ? 30 : totalMinutes,
             DueDate = dto.DueDate,
             Status = WorkItemStatus.Pending
         };
@@ -86,12 +90,14 @@ public class WorkItemsController : ControllerBase
             return BadRequest($"Prioridad no válida: {dto.Priority}");
         if (!Enum.TryParse<WorkItemStatus>(dto.Status, ignoreCase: true, out var status))
             return BadRequest($"Estado no válido: {dto.Status}");
+        if (ValidateEstimate(dto.EstimatedHours, dto.EstimatedMinutes) is { } estimateError)
+            return BadRequest(estimateError);
 
         item.Title = dto.Title;
         item.Description = dto.Description;
         item.ProjectId = dto.ProjectId;
         item.Priority = priority;
-        item.EstimatedMinutes = dto.EstimatedMinutes;
+        item.EstimatedMinutes = dto.EstimatedHours * 60 + dto.EstimatedMinutes;
         item.DueDate = dto.DueDate;
 
         var wasCompleted = item.Status == WorkItemStatus.Completed;
@@ -121,8 +127,16 @@ public class WorkItemsController : ControllerBase
         return NoContent();
     }
 
+    // En BD se guarda el total en minutos; la API lo expone como horas + minutos (0-59).
+    private static string? ValidateEstimate(int hours, int minutes)
+    {
+        if (hours < 0) return "Las horas estimadas no pueden ser negativas.";
+        if (minutes < 0 || minutes > 59) return "Los minutos estimados deben estar entre 0 y 59.";
+        return null;
+    }
+
     private static WorkItemDto ToDto(WorkItem w) => new(
         w.Id, w.Title, w.Description, w.ProjectId, w.Project?.Name,
-        w.Priority.ToString(), w.EstimatedMinutes, w.DueDate, w.Status.ToString(),
+        w.Priority.ToString(), w.EstimatedMinutes / 60, w.EstimatedMinutes % 60, w.DueDate, w.Status.ToString(),
         w.ScheduledStart, w.ScheduledEnd);
 }

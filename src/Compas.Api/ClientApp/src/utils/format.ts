@@ -48,3 +48,8 @@ export const projectStatusLabel: Record<string, string> = {
   Completed: "Completado",
   Archived: "Archivado",
 };
+
+/** Total estimado de una tarea en minutos (horas + minutos). */
+export function totalMinutes(t: { estimatedHours: number; estimatedMinutes: number }): number {
+  return t.estimatedHours * 60 + t.estimatedMinutes;
+}

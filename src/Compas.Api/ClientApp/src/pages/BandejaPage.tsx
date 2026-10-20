@@ -4,7 +4,7 @@ import { ConnectionBanner } from "../components/ConnectionBanner";
 import { useApiData } from "../hooks/useApiData";
 import { projectsApi, workItemsApi } from "../api";
 import type { Priority, WorkItemDto, WorkItemStatus } from "../api/types";
-import { fmtDate, priorityLabel, statusLabel } from "../utils/format";
+import { fmtDate, fmtDuration, totalMinutes, priorityLabel, statusLabel } from "../utils/format";
 
 const STATUS_FILTERS: { value: WorkItemStatus | "all"; label: string }[] = [
   { value: "all", label: "Todas" },
@@ -28,7 +28,7 @@ export function BandejaPage() {
   async function quickAdd() {
     const title = quickTitle.trim();
     if (!title) return;
-    await workItemsApi.create({ title, priority: "Medium", estimatedMinutes: 30 });
+    await workItemsApi.create({ title, priority: "Medium", estimatedHours: 0, estimatedMinutes: 30 });
     setQuickTitle("");
     tasks.reload();
   }
@@ -39,6 +39,7 @@ export function BandejaPage() {
       description: task.description,
       projectId: task.projectId,
       priority: task.priority,
+      estimatedHours: task.estimatedHours,
       estimatedMinutes: task.estimatedMinutes,
       dueDate: task.dueDate,
       status: task.status === "Completed" ? "Pending" : "Completed",
@@ -100,7 +101,7 @@ export function BandejaPage() {
                   {priorityLabel[t.priority]}
                 </span>
                 <span className="tag">{statusLabel[t.status]}</span>
-                <span>{t.estimatedMinutes}m estimados</span>
+                <span>{fmtDuration(totalMinutes(t))} estimados</span>
                 {t.projectName && <span>📁 {t.projectName}</span>}
                 {t.dueDate && <span>Vence: {fmtDate(t.dueDate)}</span>}
               </div>
@@ -156,6 +157,7 @@ function TaskModal({
   const [description, setDescription] = useState(isNew ? "" : task.description ?? "");
   const [projectId, setProjectId] = useState<string>(isNew ? "" : task.projectId?.toString() ?? "");
   const [priority, setPriority] = useState<Priority>(isNew ? "Medium" : task.priority);
+  const [estimatedHours, setEstimatedHours] = useState(isNew ? 0 : task.estimatedHours);
   const [estimatedMinutes, setEstimatedMinutes] = useState(isNew ? 30 : task.estimatedMinutes);
   const [dueDate, setDueDate] = useState(isNew ? "" : task.dueDate ? task.dueDate.slice(0, 10) : "");
   const [saving, setSaving] = useState(false);
@@ -173,6 +175,7 @@ function TaskModal({
           description: description || null,
           projectId: parsedProjectId,
           priority,
+          estimatedHours,
           estimatedMinutes,
           dueDate: parsedDueDate,
         });
@@ -182,6 +185,7 @@ function TaskModal({
           description: description || null,
           projectId: parsedProjectId,
           priority,
+          estimatedHours,
           estimatedMinutes,
           dueDate: parsedDueDate,
           status: task.status,
@@ -237,15 +241,28 @@ function TaskModal({
 
         <div className="field-row">
           <div className="field">
-            <label>Duración estimada (min)</label>
+            <label>Horas estimadas</label>
             <input
               type="number"
-              min={5}
-              step={5}
-              value={estimatedMinutes}
-              onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
+              min={0}
+              value={estimatedHours}
+              onChange={(e) => setEstimatedHours(Math.max(0, Number(e.target.value)))}
             />
           </div>
+          <div className="field">
+            <label>Minutos estimados</label>
+            <input
+              type="number"
+              min={0}
+              max={59}
+              step={5}
+              value={estimatedMinutes}
+              onChange={(e) => setEstimatedMinutes(Math.min(59, Math.max(0, Number(e.target.value))))}
+            />
+          </div>
+        </div>
+
+        <div className="field-row">
           <div className="field">
             <label>Fecha de vencimiento</label>
             <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
