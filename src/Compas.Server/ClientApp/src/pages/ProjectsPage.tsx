@@ -20,7 +20,7 @@ interface FormState {
 const emptyForm: FormState = {
   name: "",
   description: "",
-  colorHex: "#7C9EFF",
+  colorHex: "#0A0A0A",
   status: "Active",
   targetDate: "",
 };

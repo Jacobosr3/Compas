@@ -64,7 +64,7 @@ export function TaskRow({
             {t.estimatedHours}h {t.estimatedMinutes}m estimados
           </span>
 
-          {t.projectName && <span>📁 {t.projectName}</span>}
+          {t.projectName && <span>{t.projectName}</span>}
 
           {t.dueDate && <span>Vence: {fmtDate(t.dueDate)}</span>}
 
@@ -94,7 +94,10 @@ export function TaskRow({
         </button>
       </div>
 
-      {expanded && <SubtaskPanel taskId={t.id} subtasks={t.subtasks} onChanged={onChanged} />}
+      {/* Siempre montado para poder animar la altura; oculto (y fuera del tabulador) al plegar. */}
+      <div className={"subtasks-wrap" + (expanded ? " open" : "")} aria-hidden={!expanded}>
+        <SubtaskPanel taskId={t.id} subtasks={t.subtasks} onChanged={onChanged} />
+      </div>
     </div>
   );
 }
@@ -175,26 +178,14 @@ function SubtaskRow({
     );
   }
 
+  function toggle() {
+    return run(() =>
+      workItemsApi.updateSubtask(taskId, subtask.id, subtask.title, !subtask.isCompleted)
+    );
+  }
+
   return (
     <div className="subtask-row">
-      <label className="check">
-        <input
-          type="checkbox"
-          checked={subtask.isCompleted}
-          onChange={() =>
-            run(() =>
-              workItemsApi.updateSubtask(
-                taskId,
-                subtask.id,
-                subtask.title,
-                !subtask.isCompleted
-              )
-            )
-          }
-        />
-        <span className="check-box" aria-hidden="true" />
-      </label>
-
       {editing ? (
         <input
           className="subtask-edit"
@@ -210,7 +201,16 @@ function SubtaskRow({
       ) : (
         <span
           className={"subtask-title" + (subtask.isCompleted ? " done" : "")}
-          onDoubleClick={startEdit}
+          role="checkbox"
+          aria-checked={subtask.isCompleted}
+          tabIndex={0}
+          onClick={toggle}
+          onKeyDown={(e) => {
+            if (e.key === " " || e.key === "Enter") {
+              e.preventDefault();
+              toggle();
+            }
+          }}
         >
           {subtask.title}
         </span>

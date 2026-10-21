@@ -22,14 +22,7 @@ export function AgendaPage() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            style={{
-              background: "var(--panel-raised)",
-              border: "1px solid var(--line)",
-              borderRadius: 8,
-              padding: "7px 10px",
-              color: "var(--text)",
-              fontSize: 12.5,
-            }}
+            className="date-input"
           />
           <button className="btn-primary" onClick={() => setShowForm(true)}>
             + Nuevo evento
@@ -167,7 +160,7 @@ function EventModal({
           <textarea value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
 
-        {validationError && <div style={{ color: "#FFC5A8", fontSize: 12.5, marginBottom: 10 }}>{validationError}</div>}
+        {validationError && <div style={{ color: "var(--danger)", fontSize: 14, marginBottom: 12 }}>{validationError}</div>}
 
         <div className="modal-actions">
           <button className="btn-secondary" onClick={onClose}>

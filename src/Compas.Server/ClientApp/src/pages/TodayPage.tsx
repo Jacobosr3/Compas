@@ -110,7 +110,7 @@ export function TodayPage() {
                 const pct = Math.round(p.progressPercent);
                 return (
                   <div key={p.id} className="proj-row" style={{ ["--c" as string]: p.colorHex }}>
-                    <div className="proj-ring" style={{ background: `conic-gradient(var(--c) ${pct * 3.6}deg, var(--panel-raised) 0)` }}>
+                    <div className="proj-ring" style={{ ["--deg" as string]: `${pct * 3.6}deg` }}>
                       <span>{pct}%</span>
                     </div>
                     <div className="proj-info">
@@ -273,7 +273,7 @@ function NowCard({
             )}
             {entry.projectName && (
               <span className="chip">
-                📁 <b>{entry.projectName}</b>
+                <b>{entry.projectName}</b>
               </span>
             )}
           </div>
@@ -293,13 +293,13 @@ function NowCard({
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
           <div style={{ position: "relative", width: 96, height: 96 }}>
             <svg width="96" height="96" viewBox="0 0 96 96" style={{ transform: "rotate(-90deg)" }}>
-              <circle cx="48" cy="48" r="42" fill="none" stroke="#2A2F3D" strokeWidth="6" />
+              <circle cx="48" cy="48" r="42" fill="none" stroke="#E5E5E5" strokeWidth="6" />
               <circle
                 cx="48"
                 cy="48"
                 r="42"
                 fill="none"
-                stroke="#7C9EFF"
+                stroke="#0A0A0A"
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
@@ -308,13 +308,13 @@ function NowCard({
               />
             </svg>
             <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <span className="mono" style={{ fontSize: 16, fontWeight: 500 }}>
+              <span className="mono" style={{ fontSize: 18, fontWeight: 600 }}>
                 {remainingMin}m
               </span>
-              <span style={{ fontSize: 9.5, color: "var(--muted)" }}>restantes</span>
+              <span style={{ fontSize: 12, color: "var(--muted)" }}>restantes</span>
             </div>
           </div>
-          <div className="mono" style={{ fontSize: 11.5, color: "var(--muted)" }}>
+          <div className="mono" style={{ fontSize: 12, color: "var(--muted)" }}>
             {fmtTime(entry.start)} — {fmtTime(entry.end)}
           </div>
         </div>
