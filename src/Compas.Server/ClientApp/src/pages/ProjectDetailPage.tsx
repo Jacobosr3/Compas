@@ -3,12 +3,20 @@ import { Link, useParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { TaskModal, TaskRow } from "../components/TaskParts";
+import { ProjectBoard } from "../components/ProjectBoard";
 import { useApiData } from "../hooks/useApiData";
 import { projectsApi, workItemsApi } from "../api";
 import type { WorkItemDto } from "../api/types";
 import { fmtDate, projectStatusLabel } from "../utils/format";
 
 type Filter = "all" | "open" | "done";
+type View = "status" | "week" | "list";
+
+const VIEWS: { value: View; label: string }[] = [
+  { value: "list", label: "Lista" },
+  { value: "status", label: "Estados" },
+  { value: "week", label: "Semana" },
+];
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "Todas" },
@@ -24,6 +32,7 @@ export function ProjectDetailPage() {
   const allProjects = useApiData(() => projectsApi.list(), []);
 
   const [filter, setFilter] = useState<Filter>("all");
+  const [view, setView] = useState<View>("list");
   const [modalTask, setModalTask] = useState<WorkItemDto | "new" | null>(null);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
@@ -89,39 +98,72 @@ export function ProjectDetailPage() {
         <h2>Tareas</h2>
 
         <div className="actions-inline">
-          {FILTERS.map((f) => (
-            <button
-              key={f.value}
-              className={f.value === filter ? "btn-secondary" : "btn-ghost"}
-              onClick={() => setFilter(f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
+          <div className="segmented" role="tablist" aria-label="Vista de tareas">
+            {VIEWS.map((v) => (
+              <button
+                key={v.value}
+                role="tab"
+                aria-selected={v.value === view}
+                className={v.value === view ? "btn-secondary" : "btn-ghost"}
+                onClick={() => setView(v.value)}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+          {view === "list" &&
+            FILTERS.map((f) => (
+              <button
+                key={f.value}
+                className={f.value === filter ? "btn-secondary" : "btn-ghost"}
+                onClick={() => setFilter(f.value)}
+              >
+                {f.label}
+              </button>
+            ))}
           <button className="btn-primary" onClick={() => setModalTask("new")}>
             + Nueva tarea
           </button>
         </div>
       </div>
 
-      {tasks.status === "ok" && visible.length === 0 && (
+      {tasks.status === "ok" && (tasks.data ?? []).length === 0 && (
         <div className="empty-state">
-          <p>{filter === "all" ? "Este proyecto aún no tiene tareas." : "No hay tareas en este filtro."}</p>
+          <p>Este proyecto aún no tiene tareas.</p>
         </div>
       )}
 
-      <div className="record-list">
-        {visible.map((t) => (
-          <TaskRow
-            key={t.id}
-            task={t}
-            expanded={expanded.has(t.id)}
-            onToggleExpanded={() => toggleExpanded(t.id)}
-            onEdit={() => setModalTask(t)}
-            onChanged={reloadAll}
-          />
-        ))}
-      </div>
+      {view !== "list" && (tasks.data ?? []).length > 0 && (
+        <ProjectBoard
+          tasks={tasks.data ?? []}
+          mode={view}
+          onEdit={(t) => setModalTask(t)}
+          onChanged={reloadAll}
+        />
+      )}
+
+      {view === "list" && (
+        <>
+          {tasks.status === "ok" && (tasks.data ?? []).length > 0 && visible.length === 0 && (
+            <div className="empty-state">
+              <p>No hay tareas en este filtro.</p>
+            </div>
+          )}
+
+          <div className="record-list">
+            {visible.map((t) => (
+              <TaskRow
+                key={t.id}
+                task={t}
+                expanded={expanded.has(t.id)}
+                onToggleExpanded={() => toggleExpanded(t.id)}
+                onEdit={() => setModalTask(t)}
+                onChanged={reloadAll}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       {modalTask && (
         <TaskModal

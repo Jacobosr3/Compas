@@ -461,6 +461,147 @@
   max-width: 640px;
 }
 
+/* ---------- tablero (scrum) del proyecto ---------- */
+.segmented {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-buttons);
+}
+.board {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(240px, 1fr);
+  gap: 12px;
+  align-items: start;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+/* Semana: sin scroll lateral. Los 7 días caben en una fila en pantallas anchas
+   y se reparten en varias filas en las estrechas; "Sin día" ocupa una fila entera. */
+.board-week {
+  grid-auto-flow: row;
+  grid-auto-columns: auto;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  overflow-x: visible;
+}
+@media (min-width: 1100px) {
+  .board-week {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+}
+.board-week .board-col {
+  min-width: 0;
+  padding: 10px;
+}
+.board-week .board-card {
+  padding: 10px;
+}
+.board-col-wide {
+  grid-column: 1 / -1;
+  min-height: 0;
+}
+.board-col-wide .board-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+.board-col {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-cards);
+  padding: 12px;
+  min-height: 160px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.board-col.drag-over {
+  border-color: var(--color-ink);
+  background: var(--panel);
+}
+.board-col.today {
+  border-color: var(--color-ink);
+}
+.board-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 12px;
+}
+.board-col-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.board-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.board-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-nested);
+  box-shadow: var(--shadow-card);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.board-card:hover {
+  border-color: var(--color-ink);
+}
+.board-card[draggable="true"] {
+  cursor: grab;
+}
+.board-card-title {
+  font-size: 14px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.board-card-project {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: -4px;
+}
+.board-card-title.done {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+.board-status {
+  width: 100%;
+  background: var(--color-canvas);
+  border: 1px solid transparent;
+  border-radius: var(--radius-inputs);
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.board-status:focus {
+  outline: none;
+  border-color: var(--line);
+  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.06);
+}
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.week-range {
+  min-width: 140px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+}
+.board-note {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 /* ---------- subtareas (pasos de una tarea) ---------- */
 .subtasks-wrap {
   flex: 1 1 100%;

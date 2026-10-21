@@ -5,6 +5,7 @@ import { useApiData } from "../hooks/useApiData";
 import { projectsApi, workItemsApi } from "../api";
 import type { WorkItemDto, WorkItemStatus } from "../api/types";
 import { TaskModal, TaskRow } from "../components/TaskParts";
+import { ProjectBoard } from "../components/ProjectBoard";
 
 const STATUS_FILTERS: { value: WorkItemStatus | "all"; label: string }[] = [
   { value: "all", label: "Todas" },
@@ -14,12 +15,24 @@ const STATUS_FILTERS: { value: WorkItemStatus | "all"; label: string }[] = [
   { value: "Completed", label: "Completadas" },
 ];
 
+type View = "list" | "status" | "week";
+
+const VIEWS: { value: View; label: string }[] = [
+  { value: "list", label: "Lista" },
+  { value: "status", label: "Estados" },
+  { value: "week", label: "Semana" },
+];
+
 export function BandejaPage() {
   const [filter, setFilter] = useState<WorkItemStatus | "all">("all");
+  const [view, setView] = useState<View>("list");
+
+  // El tablero necesita todas las tareas: el filtro por estado solo aplica a la lista.
+  const effectiveFilter = view === "list" ? filter : "all";
 
   const tasks = useApiData(
-    () => (filter === "all" ? workItemsApi.list() : workItemsApi.list(filter)),
-    [filter]
+    () => (effectiveFilter === "all" ? workItemsApi.list() : workItemsApi.list(effectiveFilter)),
+    [effectiveFilter]
   );
 
   const projects = useApiData(() => projectsApi.list(), []);
@@ -77,19 +90,34 @@ export function BandejaPage() {
         <h2>Tareas</h2>
 
         <div className="actions-inline">
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              className={
-                f.value === filter
-                  ? "btn-secondary"
-                  : "btn-ghost"
-              }
-              onClick={() => setFilter(f.value)}
-            >
-              {f.label}
-            </button>
-          ))}
+          <div className="segmented" role="tablist" aria-label="Vista de tareas">
+            {VIEWS.map((v) => (
+              <button
+                key={v.value}
+                role="tab"
+                aria-selected={v.value === view}
+                className={v.value === view ? "btn-secondary" : "btn-ghost"}
+                onClick={() => setView(v.value)}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          {view === "list" &&
+            STATUS_FILTERS.map((f) => (
+              <button
+                key={f.value}
+                className={
+                  f.value === filter
+                    ? "btn-secondary"
+                    : "btn-ghost"
+                }
+                onClick={() => setFilter(f.value)}
+              >
+                {f.label}
+              </button>
+            ))}
         </div>
       </div>
 
@@ -116,22 +144,34 @@ export function BandejaPage() {
       {status === "ok" &&
         (!tasks.data || tasks.data.length === 0) && (
           <div className="empty-state">
-            <p>No hay tareas en este filtro.</p>
+            <p>{view === "list" ? "No hay tareas en este filtro." : "Todavía no hay tareas."}</p>
           </div>
         )}
 
-      <div className="record-list">
-        {tasks.data?.map((t) => (
-          <TaskRow
-            key={t.id}
-            task={t}
-            expanded={expanded.has(t.id)}
-            onToggleExpanded={() => toggleExpanded(t.id)}
-            onEdit={() => setModalTask(t)}
-            onChanged={tasks.reload}
-          />
-        ))}
-      </div>
+      {view !== "list" && (tasks.data ?? []).length > 0 && (
+        <ProjectBoard
+          tasks={tasks.data ?? []}
+          mode={view}
+          showProject
+          onEdit={(t) => setModalTask(t)}
+          onChanged={tasks.reload}
+        />
+      )}
+
+      {view === "list" && (
+        <div className="record-list">
+          {tasks.data?.map((t) => (
+            <TaskRow
+              key={t.id}
+              task={t}
+              expanded={expanded.has(t.id)}
+              onToggleExpanded={() => toggleExpanded(t.id)}
+              onEdit={() => setModalTask(t)}
+              onChanged={tasks.reload}
+            />
+          ))}
+        </div>
+      )}
 
       {modalTask && (
         <TaskModal
