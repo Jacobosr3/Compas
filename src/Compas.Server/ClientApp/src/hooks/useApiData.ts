@@ -6,7 +6,7 @@ export type AsyncStatus = "loading" | "ok" | "error";
 /**
  * Ejecuta `loader` al montar y expone datos + estado de conexión.
  * `reload()` se puede llamar tras cualquier acción de escritura (crear, editar, borrar)
- * para refrescar la vista con los datos reales del backend.
+ * para refrescar la vista con los datos reales del backend, sin parpadeo de carga.
  */
 export function useApiData<T>(loader: () => Promise<T>, deps: unknown[] = []) {
   const [data, setData] = useState<T | null>(null);
@@ -14,7 +14,9 @@ export function useApiData<T>(loader: () => Promise<T>, deps: unknown[] = []) {
   const [error, setError] = useState<string | null>(null);
 
   const reload = useCallback(() => {
-    setStatus("loading");
+    // Si ya hay datos en pantalla, la recarga es silenciosa: no se vuelve a "loading"
+    // para que no aparezcan carteles de carga ni salte el diseño al completar/editar.
+    setStatus((current) => (current === "ok" ? current : "loading"));
     setError(null);
     loader()
       .then((result) => {
