@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { useApiData } from "../hooks/useApiData";
 import { projectsApi } from "../api";
@@ -29,6 +30,7 @@ export function ProjectsPage() {
   const { data, status, error, reload } = useApiData(() => projectsApi.list(), []);
   const navigate = useNavigate();
   const [modalProject, setModalProject] = useState<ProjectDto | "new" | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectDto | null>(null);
 
   return (
     <main className="main">
@@ -96,12 +98,9 @@ export function ProjectsPage() {
               </button>
               <button
                 className="btn-danger"
-                onClick={async (e) => {
+                onClick={(e) => {
                   e.stopPropagation();
-                  if (confirm(`¿Eliminar "${p.name}"? Esto no borra sus tareas, pero quedarán sin proyecto.`)) {
-                    await projectsApi.remove(p.id);
-                    reload();
-                  }
+                  setProjectToDelete(p);
                 }}
               >
                 Eliminar
@@ -110,6 +109,18 @@ export function ProjectsPage() {
           </div>
         ))}
       </div>
+
+      {projectToDelete && (
+        <ConfirmModal
+          title="Eliminar proyecto"
+          message={`¿Seguro que quieres eliminar "${projectToDelete.name}"? Sus tareas no se borran, pero quedarán sin proyecto.`}
+          onConfirm={async () => {
+            await projectsApi.remove(projectToDelete.id);
+            reload();
+          }}
+          onCancel={() => setProjectToDelete(null)}
+        />
+      )}
 
       {modalProject && <ProjectModal project={modalProject} onClose={() => setModalProject(null)} onSaved={reload} />}
     </main>

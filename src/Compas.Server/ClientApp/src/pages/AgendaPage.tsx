@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { Topbar } from "../components/Topbar";
+import { ConfirmModal } from "../components/ConfirmModal";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { useApiData } from "../hooks/useApiData";
 import { calendarEventsApi } from "../api";
+import type { CalendarEventDto } from "../api/types";
 import { fmtTime, toDateInputValue, toDateTimeLocalValue } from "../utils/format";
 
 export function AgendaPage() {
   const [selectedDate, setSelectedDate] = useState(() => toDateInputValue(new Date()));
   const { data, status, error, reload } = useApiData(() => calendarEventsApi.list(selectedDate), [selectedDate]);
   const [showForm, setShowForm] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<CalendarEventDto | null>(null);
 
   return (
     <main className="main">
@@ -61,12 +64,7 @@ export function AgendaPage() {
               <div className="record-actions">
                 <button
                   className="btn-danger"
-                  onClick={async () => {
-                    if (confirm(`¿Eliminar "${evt.title}"?`)) {
-                      await calendarEventsApi.remove(evt.id);
-                      reload();
-                    }
-                  }}
+                  onClick={() => setEventToDelete(evt)}
                 >
                   Eliminar
                 </button>
@@ -74,6 +72,18 @@ export function AgendaPage() {
             </div>
           ))}
       </div>
+
+      {eventToDelete && (
+        <ConfirmModal
+          title="Eliminar evento"
+          message={`¿Seguro que quieres eliminar "${eventToDelete.title}"? No se puede deshacer.`}
+          onConfirm={async () => {
+            await calendarEventsApi.remove(eventToDelete.id);
+            reload();
+          }}
+          onCancel={() => setEventToDelete(null)}
+        />
+      )}
 
       {showForm && (
         <EventModal

@@ -501,7 +501,7 @@
 }
 .subtask-title {
   cursor: pointer;
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
   background: linear-gradient(currentColor, currentColor) no-repeat 0 55% / 0% 1px;
@@ -529,6 +529,7 @@
   font-size: 14px;
 }
 .subtask-actions {
+  margin-left: auto;
   display: flex;
   gap: 2px;
   flex-shrink: 0;
@@ -629,6 +630,14 @@
   line-height: 1.56;
   font-weight: 600;
   margin: 0 0 20px;
+}
+.modal-confirm {
+  max-width: 400px;
+}
+.confirm-message {
+  margin: -8px 0 20px;
+  color: var(--muted);
+  font-size: 14px;
 }
 .modal-actions {
   display: flex;

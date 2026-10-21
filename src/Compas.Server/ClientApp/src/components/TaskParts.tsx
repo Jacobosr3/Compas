@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { workItemsApi } from "../api";
+import { ConfirmModal } from "./ConfirmModal";
 import type { Priority, SubtaskDto, WorkItemDto } from "../api/types";
 import { fmtDate, priorityLabel, statusLabel } from "../utils/format";
 
@@ -33,15 +34,27 @@ export function TaskRow({
     onChanged();
   }
 
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+
   async function remove() {
-    if (confirm(`¿Eliminar "${t.title}"?`)) {
-      await workItemsApi.remove(t.id);
-      onChanged();
-    }
+    await workItemsApi.remove(t.id);
+    onChanged();
   }
 
   return (
-    <div className="record-row">
+    <div
+      className="record-row clickable"
+      role="button"
+      tabIndex={0}
+      aria-expanded={expanded}
+      onClick={onToggleExpanded}
+      onKeyDown={(e) => {
+        if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onToggleExpanded();
+        }
+      }}
+    >
       <div className="record-main">
         <div className="record-title" style={{ opacity: t.status === "Completed" ? 0.55 : 1 }}>
           {t.status === "Completed" ? "✓ " : ""}
@@ -76,11 +89,7 @@ export function TaskRow({
         </div>
       </div>
 
-      <div className="record-actions">
-        <button className="btn-secondary" onClick={onToggleExpanded}>
-          {expanded ? "Ocultar pasos" : "Pasos"}
-        </button>
-
+      <div className="record-actions" onClick={(e) => e.stopPropagation()}>
         <button className="btn-secondary" onClick={toggleComplete}>
           {t.status === "Completed" ? "Reabrir" : "Completar"}
         </button>
@@ -89,13 +98,26 @@ export function TaskRow({
           Editar
         </button>
 
-        <button className="btn-danger" onClick={remove}>
+        <button className="btn-danger" onClick={() => setConfirmingDelete(true)}>
           Eliminar
         </button>
       </div>
 
+      {confirmingDelete && (
+        <ConfirmModal
+          title="Eliminar tarea"
+          message={`¿Seguro que quieres eliminar "${t.title}"? Se borrarán también sus pasos y no se puede deshacer.`}
+          onConfirm={remove}
+          onCancel={() => setConfirmingDelete(false)}
+        />
+      )}
+
       {/* Siempre montado para poder animar la altura; oculto (y fuera del tabulador) al plegar. */}
-      <div className={"subtasks-wrap" + (expanded ? " open" : "")} aria-hidden={!expanded}>
+      <div
+        className={"subtasks-wrap" + (expanded ? " open" : "")}
+        aria-hidden={!expanded}
+        onClick={(e) => e.stopPropagation()}
+      >
         <SubtaskPanel taskId={t.id} subtasks={t.subtasks} onChanged={onChanged} />
       </div>
     </div>
