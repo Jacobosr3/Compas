@@ -3,7 +3,7 @@ import { Topbar } from "../components/Topbar";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { useApiData } from "../hooks/useApiData";
 import { projectsApi, workItemsApi } from "../api";
-import type { Priority, WorkItemDto, WorkItemStatus } from "../api/types";
+import type { Priority, SubtaskDto, WorkItemDto, WorkItemStatus } from "../api/types";
 import { fmtDate, priorityLabel, statusLabel } from "../utils/format";
 
 const STATUS_FILTERS: { value: WorkItemStatus | "all"; label: string }[] = [
@@ -28,6 +28,16 @@ export function BandejaPage() {
 
   const [modalTask, setModalTask] = useState<WorkItemDto | "new" | null>(null);
   const [quickTitle, setQuickTitle] = useState("");
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+
+  function toggleExpanded(id: number) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const status =
     tasks.status === "error"
@@ -177,10 +187,24 @@ export function BandejaPage() {
                     Vence: {fmtDate(t.dueDate)}
                   </span>
                 )}
+
+                {t.subtasks.length > 0 && (
+                  <span className="tag">
+                    ☑ {t.subtasks.filter((s) => s.isCompleted).length}/
+                    {t.subtasks.length}
+                  </span>
+                )}
               </div>
             </div>
 
             <div className="record-actions">
+              <button
+                className="btn-secondary"
+                onClick={() => toggleExpanded(t.id)}
+              >
+                {expanded.has(t.id) ? "Ocultar pasos" : "Pasos"}
+              </button>
+
               <button
                 className="btn-secondary"
                 onClick={() => toggleComplete(t)}
@@ -213,6 +237,14 @@ export function BandejaPage() {
                 Eliminar
               </button>
             </div>
+
+            {expanded.has(t.id) && (
+              <SubtaskPanel
+                taskId={t.id}
+                subtasks={t.subtasks}
+                onChanged={tasks.reload}
+              />
+            )}
           </div>
         ))}
       </div>
@@ -226,6 +258,144 @@ export function BandejaPage() {
         />
       )}
     </main>
+  );
+}
+
+function SubtaskPanel({
+  taskId,
+  subtasks,
+  onChanged,
+}: {
+  taskId: number;
+  subtasks: SubtaskDto[];
+  onChanged: () => void;
+}) {
+  const [title, setTitle] = useState("");
+
+  async function run(action: () => Promise<unknown>) {
+    try {
+      await action();
+      onChanged();
+    } catch (err) {
+      alert(
+        "No se pudo guardar: " +
+          (err instanceof Error ? err.message : String(err))
+      );
+    }
+  }
+
+  async function add() {
+    const value = title.trim();
+    if (!value) return;
+    await run(() => workItemsApi.addSubtask(taskId, value));
+    setTitle("");
+  }
+
+  return (
+    <div className="subtasks">
+      {subtasks.map((s) => (
+        <SubtaskRow key={s.id} taskId={taskId} subtask={s} run={run} />
+      ))}
+
+      <div className="quick-add">
+        <input
+          placeholder="Nuevo paso…"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && add()}
+        />
+
+        <button onClick={add}>Añadir</button>
+      </div>
+    </div>
+  );
+}
+
+function SubtaskRow({
+  taskId,
+  subtask,
+  run,
+}: {
+  taskId: number;
+  subtask: SubtaskDto;
+  run: (action: () => Promise<unknown>) => Promise<void>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(subtask.title);
+
+  function startEdit() {
+    setDraft(subtask.title);
+    setEditing(true);
+  }
+
+  async function commit() {
+    const value = draft.trim();
+    setEditing(false);
+    if (!value || value === subtask.title) return;
+    await run(() =>
+      workItemsApi.updateSubtask(taskId, subtask.id, value, subtask.isCompleted)
+    );
+  }
+
+  return (
+    <div className="subtask-row">
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={subtask.isCompleted}
+          onChange={() =>
+            run(() =>
+              workItemsApi.updateSubtask(
+                taskId,
+                subtask.id,
+                subtask.title,
+                !subtask.isCompleted
+              )
+            )
+          }
+        />
+        <span className="check-box" aria-hidden="true" />
+      </label>
+
+      {editing ? (
+        <input
+          className="subtask-edit"
+          value={draft}
+          autoFocus
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") setEditing(false);
+          }}
+        />
+      ) : (
+        <span
+          className={"subtask-title" + (subtask.isCompleted ? " done" : "")}
+          onDoubleClick={startEdit}
+        >
+          {subtask.title}
+        </span>
+      )}
+
+      <div className="subtask-actions">
+        <button
+          className="btn-ghost"
+          aria-label={`Editar paso "${subtask.title}"`}
+          onClick={startEdit}
+        >
+          ✎
+        </button>
+
+        <button
+          className="btn-ghost"
+          aria-label={`Eliminar paso "${subtask.title}"`}
+          onClick={() => run(() => workItemsApi.removeSubtask(taskId, subtask.id))}
+        >
+          ✕
+        </button>
+      </div>
+    </div>
   );
 }
 

@@ -56,6 +56,13 @@ export interface WorkItemDto {
   status: WorkItemStatus;
   scheduledStart: string | null;
   scheduledEnd: string | null;
+  subtasks: SubtaskDto[];
+}
+
+export interface SubtaskDto {
+  id: number;
+  title: string;
+  isCompleted: boolean;
 }
 
 export interface CreateWorkItemDto {

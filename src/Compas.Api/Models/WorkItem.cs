@@ -31,4 +31,12 @@ public class WorkItem
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? CompletedAt { get; set; }
+
+    /// <summary>
+    /// Si no es null, esta fila es una subtarea (un paso de la tarea padre). Las subtareas
+    /// son una lista de comprobación: no se planifican por separado, solo la tarea padre.
+    /// </summary>
+    public int? ParentId { get; set; }
+    public WorkItem? Parent { get; set; }
+    public List<WorkItem> Subtasks { get; set; } = new();
 }

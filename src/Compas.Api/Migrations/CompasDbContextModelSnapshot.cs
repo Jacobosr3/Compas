@@ -171,6 +171,9 @@ namespace Compas.Api.Migrations
                     b.Property<int>("EstimatedMinutes")
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Priority")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -198,6 +201,8 @@ namespace Compas.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("DueDate");
+
+                    b.HasIndex("ParentId");
 
                     b.HasIndex("ProjectId");
 
@@ -233,10 +238,17 @@ namespace Compas.Api.Migrations
 
             modelBuilder.Entity("Compas.Api.Models.WorkItem", b =>
                 {
+                    b.HasOne("Compas.Api.Models.WorkItem", "Parent")
+                        .WithMany("Subtasks")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("Compas.Api.Models.Project", "Project")
                         .WithMany("WorkItems")
                         .HasForeignKey("ProjectId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Parent");
 
                     b.Navigation("Project");
                 });
@@ -249,6 +261,11 @@ namespace Compas.Api.Migrations
             modelBuilder.Entity("Compas.Api.Models.Project", b =>
                 {
                     b.Navigation("WorkItems");
+                });
+
+            modelBuilder.Entity("Compas.Api.Models.WorkItem", b =>
+                {
+                    b.Navigation("Subtasks");
                 });
 #pragma warning restore 612, 618
         }

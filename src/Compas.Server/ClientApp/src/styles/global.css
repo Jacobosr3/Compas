@@ -380,6 +380,103 @@
   flex-shrink: 0;
 }
 
+/* ---------- subtareas (pasos de una tarea) ---------- */
+.subtasks {
+  flex: 1 1 100%;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.subtasks .quick-add {
+  margin-top: 8px;
+  max-width: 420px;
+}
+.subtask-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 12.5px;
+}
+.subtask-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.subtask-title.done {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+.subtask-edit {
+  flex: 1;
+  min-width: 0;
+  background: var(--panel-raised);
+  border: 1px solid var(--signal);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--text);
+  font-size: 12.5px;
+}
+.subtask-actions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+.subtask-row:hover .subtask-actions,
+.subtask-row:focus-within .subtask-actions {
+  opacity: 1;
+}
+
+/* casilla personalizada */
+.check {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.check input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  margin: 0;
+  cursor: pointer;
+}
+.check-box {
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1.5px solid var(--muted);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+}
+.check:hover .check-box {
+  border-color: var(--signal);
+}
+.check input:focus-visible + .check-box {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+.check input:active + .check-box {
+  transform: scale(0.9);
+}
+.check input:checked + .check-box {
+  background: var(--mint);
+  border-color: var(--mint);
+}
+.check input:checked + .check-box::after {
+  content: "";
+  width: 4px;
+  height: 8px;
+  margin-bottom: 2px;
+  border: solid #0f1219;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 /* ---------- formularios / modal ---------- */
 .field {
   margin-bottom: 14px;

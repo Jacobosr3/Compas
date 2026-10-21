@@ -35,6 +35,11 @@ public class CompasDbContext : DbContext
              .HasForeignKey(w => w.ProjectId)
              .OnDelete(DeleteBehavior.SetNull);
 
+            e.HasOne(w => w.Parent)
+             .WithMany(w => w.Subtasks)
+             .HasForeignKey(w => w.ParentId)
+             .OnDelete(DeleteBehavior.Cascade);
+
             e.HasIndex(w => w.Status);
             e.HasIndex(w => w.DueDate);
         });

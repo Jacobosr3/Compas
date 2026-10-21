@@ -18,7 +18,8 @@ public class WorkItemsController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<WorkItemDto>>> GetAll([FromQuery] string? status, CancellationToken ct)
     {
-        var query = _db.WorkItems.Include(w => w.Project).AsQueryable();
+        var query = _db.WorkItems.Include(w => w.Project).Include(w => w.Subtasks)
+            .Where(w => w.ParentId == null);
 
         if (!string.IsNullOrWhiteSpace(status))
         {
@@ -37,7 +38,8 @@ public class WorkItemsController : ControllerBase
     {
         var items = await _db.WorkItems
             .Include(w => w.Project)
-            .Where(w => w.Status == WorkItemStatus.Pending && w.ScheduledStart == null)
+            .Include(w => w.Subtasks)
+            .Where(w => w.ParentId == null && w.Status == WorkItemStatus.Pending && w.ScheduledStart == null)
             .OrderByDescending(w => w.Priority)
             .ThenBy(w => w.DueDate)
             .ToListAsync(ct);
@@ -48,7 +50,8 @@ public class WorkItemsController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<WorkItemDto>> GetById(int id, CancellationToken ct)
     {
-        var item = await _db.WorkItems.Include(w => w.Project).FirstOrDefaultAsync(w => w.Id == id, ct);
+        var item = await _db.WorkItems.Include(w => w.Project).Include(w => w.Subtasks)
+            .FirstOrDefaultAsync(w => w.Id == id && w.ParentId == null, ct);
         return item is null ? NotFound() : ToDto(item);
     }
 
@@ -83,7 +86,7 @@ public class WorkItemsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateWorkItemDto dto, CancellationToken ct)
     {
-        var item = await _db.WorkItems.FindAsync(new object?[] { id }, ct);
+        var item = await _db.WorkItems.FirstOrDefaultAsync(w => w.Id == id && w.ParentId == null, ct);
         if (item is null) return NotFound();
 
         if (!Enum.TryParse<Priority>(dto.Priority, ignoreCase: true, out var priority))
@@ -119,10 +122,58 @@ public class WorkItemsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var item = await _db.WorkItems.FindAsync(new object?[] { id }, ct);
+        var item = await _db.WorkItems.FirstOrDefaultAsync(w => w.Id == id && w.ParentId == null, ct);
         if (item is null) return NotFound();
 
+        // Las subtareas se borran en cascada con su tarea padre.
         _db.WorkItems.Remove(item);
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    /// <summary>Añade una subtarea (paso) a una tarea.</summary>
+    [HttpPost("{id:int}/subtasks")]
+    public async Task<ActionResult<SubtaskDto>> CreateSubtask(int id, CreateSubtaskDto dto, CancellationToken ct)
+    {
+        var title = dto.Title?.Trim();
+        if (string.IsNullOrEmpty(title)) return BadRequest("El título de la subtarea es obligatorio.");
+
+        var parentExists = await _db.WorkItems.AnyAsync(w => w.Id == id && w.ParentId == null, ct);
+        if (!parentExists) return NotFound();
+
+        var sub = new WorkItem { Title = title, ParentId = id, EstimatedMinutes = 0, Status = WorkItemStatus.Pending };
+        _db.WorkItems.Add(sub);
+        await _db.SaveChangesAsync(ct);
+
+        return CreatedAtAction(nameof(GetById), new { id }, ToSubtaskDto(sub));
+    }
+
+    [HttpPut("{id:int}/subtasks/{subtaskId:int}")]
+    public async Task<IActionResult> UpdateSubtask(int id, int subtaskId, UpdateSubtaskDto dto, CancellationToken ct)
+    {
+        var title = dto.Title?.Trim();
+        if (string.IsNullOrEmpty(title)) return BadRequest("El título de la subtarea es obligatorio.");
+
+        var sub = await _db.WorkItems.FirstOrDefaultAsync(w => w.Id == subtaskId && w.ParentId == id, ct);
+        if (sub is null) return NotFound();
+
+        sub.Title = title;
+        var wasCompleted = sub.Status == WorkItemStatus.Completed;
+        sub.Status = dto.IsCompleted ? WorkItemStatus.Completed : WorkItemStatus.Pending;
+        if (dto.IsCompleted && !wasCompleted) sub.CompletedAt = DateTime.UtcNow;
+        if (!dto.IsCompleted) sub.CompletedAt = null;
+
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:int}/subtasks/{subtaskId:int}")]
+    public async Task<IActionResult> DeleteSubtask(int id, int subtaskId, CancellationToken ct)
+    {
+        var sub = await _db.WorkItems.FirstOrDefaultAsync(w => w.Id == subtaskId && w.ParentId == id, ct);
+        if (sub is null) return NotFound();
+
+        _db.WorkItems.Remove(sub);
         await _db.SaveChangesAsync(ct);
         return NoContent();
     }
@@ -138,5 +189,9 @@ public class WorkItemsController : ControllerBase
     private static WorkItemDto ToDto(WorkItem w) => new(
         w.Id, w.Title, w.Description, w.ProjectId, w.Project?.Name,
         w.Priority.ToString(), w.EstimatedMinutes / 60, w.EstimatedMinutes % 60, w.DueDate, w.Status.ToString(),
-        w.ScheduledStart, w.ScheduledEnd);
+        w.ScheduledStart, w.ScheduledEnd,
+        w.Subtasks.OrderBy(s => s.Id).Select(ToSubtaskDto).ToList());
+
+    private static SubtaskDto ToSubtaskDto(WorkItem s) =>
+        new(s.Id, s.Title, s.Status == WorkItemStatus.Completed);
 }

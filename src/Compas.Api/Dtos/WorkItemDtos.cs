@@ -12,7 +12,14 @@ public record WorkItemDto(
     DateTime? DueDate,
     string Status,
     DateTime? ScheduledStart,
-    DateTime? ScheduledEnd);
+    DateTime? ScheduledEnd,
+    List<SubtaskDto> Subtasks);
+
+public record SubtaskDto(int Id, string Title, bool IsCompleted);
+
+public record CreateSubtaskDto(string Title);
+
+public record UpdateSubtaskDto(string Title, bool IsCompleted);
 
 public record CreateWorkItemDto(
     string Title,

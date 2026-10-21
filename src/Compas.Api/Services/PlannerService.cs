@@ -57,7 +57,8 @@ public class PlannerService
 
         var pendingTasks = await _db.WorkItems
             .Include(w => w.Project)
-            .Where(w => w.Status == WorkItemStatus.Pending || w.Status == WorkItemStatus.Scheduled)
+            .Where(w => w.ParentId == null &&
+                        (w.Status == WorkItemStatus.Pending || w.Status == WorkItemStatus.Scheduled))
             .ToListAsync(ct);
 
         var engineBlocks = _engine.BuildPlan(date, fixedEvents, pendingTasks, effectiveStart);

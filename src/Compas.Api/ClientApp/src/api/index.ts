@@ -10,6 +10,7 @@ import type {
   CreateCalendarEventDto,
   DailyPlanDto,
   WorkItemStatus,
+  SubtaskDto,
 } from "./types";
 
 export const projectsApi = {
@@ -28,6 +29,12 @@ export const workItemsApi = {
   create: (dto: CreateWorkItemDto) => api.post<WorkItemDto>("/api/workitems", dto),
   update: (id: number, dto: UpdateWorkItemDto) => api.put<void>(`/api/workitems/${id}`, dto),
   remove: (id: number) => api.delete<void>(`/api/workitems/${id}`),
+  addSubtask: (id: number, title: string) =>
+    api.post<SubtaskDto>(`/api/workitems/${id}/subtasks`, { title }),
+  updateSubtask: (id: number, subtaskId: number, title: string, isCompleted: boolean) =>
+    api.put<void>(`/api/workitems/${id}/subtasks/${subtaskId}`, { title, isCompleted }),
+  removeSubtask: (id: number, subtaskId: number) =>
+    api.delete<void>(`/api/workitems/${id}/subtasks/${subtaskId}`),
 };
 
 export const calendarEventsApi = {
