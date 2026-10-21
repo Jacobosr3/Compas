@@ -22,8 +22,13 @@ export const projectsApi = {
 };
 
 export const workItemsApi = {
-  list: (status?: WorkItemStatus) =>
-    api.get<WorkItemDto[]>(`/api/workitems${status ? `?status=${status}` : ""}`),
+  list: (status?: WorkItemStatus, projectId?: number) => {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (projectId !== undefined) params.set("projectId", String(projectId));
+    const qs = params.toString();
+    return api.get<WorkItemDto[]>(`/api/workitems${qs ? `?${qs}` : ""}`);
+  },
   inbox: () => api.get<WorkItemDto[]>("/api/workitems/inbox"),
   get: (id: number) => api.get<WorkItemDto>(`/api/workitems/${id}`),
   create: (dto: CreateWorkItemDto) => api.post<WorkItemDto>("/api/workitems", dto),

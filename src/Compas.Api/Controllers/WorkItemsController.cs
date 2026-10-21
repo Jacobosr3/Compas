@@ -14,12 +14,16 @@ public class WorkItemsController : ControllerBase
 
     public WorkItemsController(CompasDbContext db) => _db = db;
 
-    /// <summary>Lista todas las tareas. Usa ?status=Pending para filtrar por estado.</summary>
+    /// <summary>Lista todas las tareas. Usa ?status=Pending y/o ?projectId=3 para filtrar.</summary>
     [HttpGet]
-    public async Task<ActionResult<List<WorkItemDto>>> GetAll([FromQuery] string? status, CancellationToken ct)
+    public async Task<ActionResult<List<WorkItemDto>>> GetAll(
+        [FromQuery] string? status, [FromQuery] int? projectId, CancellationToken ct)
     {
         var query = _db.WorkItems.Include(w => w.Project).Include(w => w.Subtasks)
             .Where(w => w.ParentId == null);
+
+        if (projectId is not null)
+            query = query.Where(w => w.ProjectId == projectId);
 
         if (!string.IsNullOrWhiteSpace(status))
         {

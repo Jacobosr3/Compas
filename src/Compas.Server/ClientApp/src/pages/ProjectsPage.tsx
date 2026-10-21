@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { useApiData } from "../hooks/useApiData";
@@ -26,6 +27,7 @@ const emptyForm: FormState = {
 
 export function ProjectsPage() {
   const { data, status, error, reload } = useApiData(() => projectsApi.list(), []);
+  const navigate = useNavigate();
   const [modalProject, setModalProject] = useState<ProjectDto | "new" | null>(null);
 
   return (
@@ -56,7 +58,16 @@ export function ProjectsPage() {
 
       <div className="record-list">
         {data?.map((p) => (
-          <div className="record-row" key={p.id}>
+          <div
+            className="record-row clickable"
+            key={p.id}
+            role="link"
+            tabIndex={0}
+            onClick={() => navigate(`/proyectos/${p.id}`)}
+            onKeyDown={(e) => {
+              if (e.target === e.currentTarget && e.key === "Enter") navigate(`/proyectos/${p.id}`);
+            }}
+          >
             <div className="record-main">
               <div className="record-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span style={{ width: 8, height: 8, borderRadius: 4, background: p.colorHex, display: "inline-block" }} />
@@ -74,12 +85,19 @@ export function ProjectsPage() {
               </div>
             </div>
             <div className="record-actions">
-              <button className="btn-secondary" onClick={() => setModalProject(p)}>
+              <button
+                className="btn-secondary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setModalProject(p);
+                }}
+              >
                 Editar
               </button>
               <button
                 className="btn-danger"
-                onClick={async () => {
+                onClick={async (e) => {
+                  e.stopPropagation();
                   if (confirm(`¿Eliminar "${p.name}"? Esto no borra sus tareas, pero quedarán sin proyecto.`)) {
                     await projectsApi.remove(p.id);
                     reload();
