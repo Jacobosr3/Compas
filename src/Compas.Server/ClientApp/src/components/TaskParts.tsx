@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { workItemsApi } from "../api";
 import { ConfirmModal } from "./ConfirmModal";
 import type { Priority, SubtaskDto, WorkItemDto } from "../api/types";
@@ -124,7 +125,53 @@ export function TaskRow({
   );
 }
 
-function SubtaskPanel({
+/** Modal con los pasos de una tarea. Va en un portal para que sus clics no activen la tarjeta de origen. */
+export function SubtasksModal({
+  task,
+  onClose,
+  onChanged,
+}: {
+  task: WorkItemDto;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      className="modal-overlay"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClose();
+      }}
+    >
+      <div
+        className="modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Pasos de ${task.title}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2>{task.title}</h2>
+        <SubtaskPanel taskId={task.id} subtasks={task.subtasks} onChanged={onChanged} />
+        <div className="modal-actions">
+          <button className="btn-secondary" onClick={onClose}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
+export function SubtaskPanel({
   taskId,
   subtasks,
   onChanged,

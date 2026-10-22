@@ -1,5 +1,6 @@
 import { useState, type DragEvent } from "react";
 import { workItemsApi } from "../api";
+import { SubtasksModal } from "./TaskParts";
 import type { Priority, WorkItemDto, WorkItemStatus } from "../api/types";
 import { fmtDate, priorityLabel, statusLabel } from "../utils/format";
 
@@ -144,7 +145,7 @@ export function ProjectBoard({
               <div className="board-cards">
                 {items.length === 0 && <div className="empty-mini">Sin tareas</div>}
                 {items.map((t) => (
-                  <BoardCard key={t.id} showProject={showProject} task={t} draggable onEdit={onEdit} onStatus={changeStatus} />
+                  <BoardCard key={t.id} showProject={showProject} task={t} draggable onEdit={onEdit} onStatus={changeStatus} onChanged={onChanged} />
                 ))}
               </div>
             </section>
@@ -209,7 +210,7 @@ export function ProjectBoard({
               <div className="board-cards">
                 {items.length === 0 && <div className="empty-mini">Sin tareas</div>}
                 {items.map((t) => (
-                  <BoardCard key={t.id} showProject={showProject} task={t} draggable onEdit={onEdit} onStatus={changeStatus} />
+                  <BoardCard key={t.id} showProject={showProject} task={t} draggable onEdit={onEdit} onStatus={changeStatus} onChanged={onChanged} />
                 ))}
               </div>
             </section>
@@ -227,7 +228,7 @@ export function ProjectBoard({
           <div className="board-cards">
             {undated.length === 0 && <div className="empty-mini">Sin tareas</div>}
             {undated.map((t) => (
-              <BoardCard key={t.id} showProject={showProject} task={t} draggable onEdit={onEdit} onStatus={changeStatus} />
+              <BoardCard key={t.id} showProject={showProject} task={t} draggable onEdit={onEdit} onStatus={changeStatus} onChanged={onChanged} />
             ))}
           </div>
         </section>
@@ -247,13 +248,16 @@ function BoardCard({
   showProject = false,
   onEdit,
   onStatus,
+  onChanged,
 }: {
   task: WorkItemDto;
   draggable?: boolean;
   showProject?: boolean;
   onEdit: (task: WorkItemDto) => void;
   onStatus: (task: WorkItemDto, status: WorkItemStatus) => void;
+  onChanged: () => void;
 }) {
+  const [open, setOpen] = useState(false);
   const done = t.subtasks.filter((s) => s.isCompleted).length;
 
   return (
@@ -276,11 +280,21 @@ function BoardCard({
         </span>
         {t.dueDate && <span>Vence {fmtDate(t.dueDate)}</span>}
         {t.subtasks.length > 0 && (
-          <span className="tag">
+          <button
+            className="tag tag-button"
+            aria-haspopup="dialog"
+            aria-label={`Ver pasos de "${t.title}"`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen((o) => !o);
+            }}
+          >
             ☑ {done}/{t.subtasks.length}
-          </span>
+          </button>
         )}
       </div>
+
+      {open && <SubtasksModal task={t} onClose={() => setOpen(false)} onChanged={onChanged} />}
 
       <select
         className="board-status"
