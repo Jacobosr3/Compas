@@ -37,7 +37,6 @@ export const priorityLabel: Record<string, string> = {
 export const statusLabel: Record<string, string> = {
   Pending: "Pendiente",
   Scheduled: "Programada",
-  InProgress: "En curso",
   Completed: "Completada",
   Cancelled: "Cancelada",
 };

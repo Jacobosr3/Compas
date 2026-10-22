@@ -66,7 +66,7 @@ export function ConfirmModal({
             Cancelar
           </button>
           <button className="btn-danger" onClick={confirm} disabled={busy}>
-            {busy ? "Eliminando…" : confirmLabel}
+            {busy ? "Un momento…" : confirmLabel}
           </button>
         </div>
       </div>

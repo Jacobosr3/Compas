@@ -20,6 +20,7 @@ public enum WorkItemStatus
 {
     Pending,
     Scheduled,
+    /// <summary>Legado: ya no se usa desde la interfaz. Se mantiene para poder leer datos antiguos.</summary>
     InProgress,
     Completed,
     Cancelled

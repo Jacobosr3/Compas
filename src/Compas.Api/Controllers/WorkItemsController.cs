@@ -145,11 +145,42 @@ public class WorkItemsController : ControllerBase
         var parentExists = await _db.WorkItems.AnyAsync(w => w.Id == id && w.ParentId == null, ct);
         if (!parentExists) return NotFound();
 
-        var sub = new WorkItem { Title = title, ParentId = id, EstimatedMinutes = 0, Status = WorkItemStatus.Pending };
+        // La nueva subtarea va al final de la lista.
+        var lastOrder = await _db.WorkItems.Where(w => w.ParentId == id).MaxAsync(w => (int?)w.SortOrder, ct) ?? -1;
+        var sub = new WorkItem
+        {
+            Title = title,
+            ParentId = id,
+            EstimatedMinutes = 0,
+            Status = WorkItemStatus.Pending,
+            SortOrder = lastOrder + 1
+        };
         _db.WorkItems.Add(sub);
         await _db.SaveChangesAsync(ct);
 
         return CreatedAtAction(nameof(GetById), new { id }, ToSubtaskDto(sub));
+    }
+
+    /// <summary>Reordena las subtareas de una tarea: recibe sus ids en el orden deseado.</summary>
+    [HttpPut("{id:int}/subtasks/order")]
+    public async Task<IActionResult> ReorderSubtasks(int id, ReorderSubtasksDto dto, CancellationToken ct)
+    {
+        var subtasks = await _db.WorkItems.Where(w => w.ParentId == id).ToListAsync(ct);
+        if (subtasks.Count == 0 && !await _db.WorkItems.AnyAsync(w => w.Id == id && w.ParentId == null, ct))
+            return NotFound();
+
+        var ids = dto.SubtaskIds ?? new List<int>();
+        if (ids.Distinct().Count() != ids.Count || ids.Any(i => subtasks.All(s => s.Id != i)))
+            return BadRequest("La lista contiene subtareas repetidas o que no pertenecen a esta tarea.");
+
+        // Las indicadas van primero y en ese orden; las que falten conservan su orden relativo detrás.
+        var rest = subtasks.Where(s => !ids.Contains(s.Id)).OrderBy(s => s.SortOrder).ThenBy(s => s.Id);
+        var position = 0;
+        foreach (var sub in ids.Select(i => subtasks.First(s => s.Id == i)).Concat(rest))
+            sub.SortOrder = position++;
+
+        await _db.SaveChangesAsync(ct);
+        return NoContent();
     }
 
     [HttpPut("{id:int}/subtasks/{subtaskId:int}")]
@@ -194,7 +225,7 @@ public class WorkItemsController : ControllerBase
         w.Id, w.Title, w.Description, w.ProjectId, w.Project?.Name,
         w.Priority.ToString(), w.EstimatedMinutes / 60, w.EstimatedMinutes % 60, w.DueDate, w.Status.ToString(),
         w.ScheduledStart, w.ScheduledEnd,
-        w.Subtasks.OrderBy(s => s.Id).Select(ToSubtaskDto).ToList());
+        w.Subtasks.OrderBy(s => s.SortOrder).ThenBy(s => s.Id).Select(ToSubtaskDto).ToList());
 
     private static SubtaskDto ToSubtaskDto(WorkItem s) =>
         new(s.Id, s.Title, s.Status == WorkItemStatus.Completed);

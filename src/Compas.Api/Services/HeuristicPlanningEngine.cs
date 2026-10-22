@@ -21,12 +21,17 @@ public class HeuristicPlanningEngine : IPlanningEngine
         DateOnly date,
         IReadOnlyList<CalendarEvent> fixedEvents,
         IReadOnlyList<WorkItem> pendingItems,
-        DateTime effectiveStart)
+        DateTime effectiveStart,
+        int? budgetMinutes = null,
+        IReadOnlyList<int>? preferredOrder = null,
+        bool exactStart = false)
     {
+        var budgetLeft = budgetMinutes ?? int.MaxValue;
         var dayStart = date.ToDateTime(TimeOnly.FromTimeSpan(_options.WorkDayStart));
-        var dayEnd = date.ToDateTime(TimeOnly.FromTimeSpan(_options.WorkDayEnd));
+        // Sin hora de fin de jornada: se puede planificar hasta medianoche.
+        var dayEnd = date.AddDays(1).ToDateTime(TimeOnly.MinValue);
 
-        var cursor = effectiveStart > dayStart ? effectiveStart : dayStart;
+        var cursor = exactStart || effectiveStart > dayStart ? effectiveStart : dayStart;
         var blocks = new List<EngineBlock>();
         var remainingTasks = pendingItems
             .Where(t => t.EstimatedMinutes > 0)
@@ -45,7 +50,7 @@ public class HeuristicPlanningEngine : IPlanningEngine
 
             if (gapEnd > gapStart)
             {
-                FillGap(gapStart, gapEnd, remainingTasks, blocks);
+                FillGap(gapStart, gapEnd, remainingTasks, blocks, ref budgetLeft, preferredOrder, gapEndsAtEvent: true);
             }
 
             var eventStart = evt.StartTime > cursor ? evt.StartTime : cursor;
@@ -65,8 +70,13 @@ public class HeuristicPlanningEngine : IPlanningEngine
 
         if (cursor < dayEnd)
         {
-            FillGap(cursor, dayEnd, remainingTasks, blocks);
+            FillGap(cursor, dayEnd, remainingTasks, blocks, ref budgetLeft, preferredOrder, gapEndsAtEvent: false);
         }
+
+        // Sin tope de jornada, el hueco final hasta medianoche no aporta nada: no se muestra
+        // (salvo que el tiempo indicado por el usuario se haya agotado, que sí explica por qué sobra hueco).
+        if (blocks.Count > 0 && blocks[^1] is { Kind: PlanEntryKind.Free } trailing && trailing.End == dayEnd && budgetLeft > 0)
+            blocks.RemoveAt(blocks.Count - 1);
 
         return blocks.OrderBy(b => b.Start).ToList();
     }
@@ -75,7 +85,14 @@ public class HeuristicPlanningEngine : IPlanningEngine
     /// Rellena un hueco libre concreto encadenando la mejor tarea disponible, insertando
     /// descansos tras bloques largos, hasta que no quepa ninguna tarea más.
     /// </summary>
-    private void FillGap(DateTime gapStart, DateTime gapEnd, List<WorkItem> remainingTasks, List<EngineBlock> blocks)
+    private void FillGap(
+        DateTime gapStart,
+        DateTime gapEnd,
+        List<WorkItem> remainingTasks,
+        List<EngineBlock> blocks,
+        ref int budgetLeft,
+        IReadOnlyList<int>? preferredOrder,
+        bool gapEndsAtEvent)
     {
         var cursor = gapStart;
         var minutesSinceBreak = 0;
@@ -83,14 +100,17 @@ public class HeuristicPlanningEngine : IPlanningEngine
         while (cursor < gapEnd)
         {
             var availableMinutes = (int)(gapEnd - cursor).TotalMinutes;
-            if (availableMinutes < 5) break;
+            if (availableMinutes < 1) break;
 
-            var candidate = PickBestTask(remainingTasks, availableMinutes, cursor);
+            var candidate = PickBestTask(remainingTasks, availableMinutes, budgetLeft, cursor, preferredOrder, gapEndsAtEvent);
             if (candidate is null)
             {
                 // No hay tarea que quepa: el resto del hueco queda libre.
+                var limitedByBudget = budgetLeft < availableMinutes;
                 blocks.Add(new EngineBlock(PlanEntryKind.Free, cursor, gapEnd, null, null,
-                    "Hueco libre: ninguna tarea pendiente encaja aquí."));
+                    limitedByBudget
+                        ? "Hueco libre: dentro del tiempo que has indicado no cabe ninguna tarea más."
+                        : "Hueco libre: ninguna tarea pendiente encaja aquí."));
                 return;
             }
 
@@ -101,9 +121,10 @@ public class HeuristicPlanningEngine : IPlanningEngine
             remainingTasks.Remove(task);
 
             minutesSinceBreak += task.EstimatedMinutes;
+            if (budgetLeft != int.MaxValue) budgetLeft -= task.EstimatedMinutes;
             cursor = end;
 
-            if (minutesSinceBreak >= _options.BreakAfterMinutes && cursor < gapEnd)
+            if (budgetLeft > 0 && minutesSinceBreak >= _options.BreakAfterMinutes && cursor < gapEnd)
             {
                 var breakEnd = cursor.AddMinutes(_options.BreakDurationMinutes);
                 if (breakEnd > gapEnd) breakEnd = gapEnd;
@@ -113,16 +134,6 @@ public class HeuristicPlanningEngine : IPlanningEngine
                 cursor = breakEnd;
                 minutesSinceBreak = 0;
             }
-
-            if ((gapEnd - cursor).TotalMinutes < _options.MinGapMinutes)
-            {
-                if (cursor < gapEnd)
-                {
-                    blocks.Add(new EngineBlock(PlanEntryKind.Free, cursor, gapEnd, null, null,
-                        "Hueco demasiado pequeño para otra tarea."));
-                }
-                return;
-            }
         }
     }
 
@@ -130,15 +141,34 @@ public class HeuristicPlanningEngine : IPlanningEngine
     /// Puntúa las tareas candidatas y devuelve la de mayor puntuación que quepa en el
     /// tiempo disponible, junto con la explicación en lenguaje natural de por qué se eligió.
     /// </summary>
-    private (WorkItem Task, string Reason)? PickBestTask(List<WorkItem> candidates, int availableMinutes, DateTime now)
+    private (WorkItem Task, string Reason)? PickBestTask(
+        List<WorkItem> candidates,
+        int availableMinutes,
+        int budgetLeft,
+        DateTime now,
+        IReadOnlyList<int>? preferredOrder,
+        bool gapEndsAtEvent)
     {
+        // Una tarea tiene que caber a la vez en el hueco y en el tiempo que queda por dedicar.
+        var limit = Math.Min(availableMinutes, budgetLeft);
+
+        if (preferredOrder is not null)
+        {
+            foreach (var id in preferredOrder)
+            {
+                var chosen = candidates.FirstOrDefault(t => t.Id == id);
+                if (chosen is not null && chosen.EstimatedMinutes <= limit)
+                    return (chosen, "Colocada en el orden que has elegido.");
+            }
+        }
+
         WorkItem? best = null;
         double bestScore = double.MinValue;
         string bestReason = string.Empty;
 
         foreach (var task in candidates)
         {
-            if (task.EstimatedMinutes > availableMinutes) continue;
+            if (task.EstimatedMinutes > limit) continue;
 
             var urgencyScore = ScoreUrgency(task.DueDate, now, out var dueLabel);
             var priorityScore = ScorePriority(task.Priority);
@@ -150,7 +180,7 @@ public class HeuristicPlanningEngine : IPlanningEngine
             {
                 bestScore = total;
                 best = task;
-                bestReason = BuildReason(task, availableMinutes, dueLabel);
+                bestReason = BuildReason(task, availableMinutes, dueLabel, gapEndsAtEvent);
             }
         }
 
@@ -182,21 +212,32 @@ public class HeuristicPlanningEngine : IPlanningEngine
         _ => 40
     };
 
-    private static string BuildReason(WorkItem task, int availableMinutes, string? dueLabel)
+    /// <summary>
+    /// Explica por qué se eligió la tarea: fecha de vencimiento y prioridad. El tamaño del hueco
+    /// solo se menciona cuando lo limita un evento de la agenda; el resto del día no tiene tope
+    /// y decir "encaja en el hueco de 1425 min" no informa de nada.
+    /// </summary>
+    private static string BuildReason(WorkItem task, int availableMinutes, string? dueLabel, bool gapEndsAtEvent)
     {
-        var parts = new List<string>
-        {
-            $"encaja en el hueco de {availableMinutes} min disponible"
-        };
+        var parts = new List<string>();
 
-        if (dueLabel is not null)
+        if (dueLabel is not null && dueLabel != "no es urgente todavía")
             parts.Add(dueLabel);
+        else if (task.DueDate is null)
+            parts.Add("sin fecha de vencimiento");
 
-        if (task.Priority is Priority.High or Priority.Urgent)
-            parts.Add($"prioridad {(task.Priority == Priority.Urgent ? "urgente" : "alta")}");
+        parts.Add(task.Priority switch
+        {
+            Priority.Urgent => "prioridad urgente",
+            Priority.High => "prioridad alta",
+            Priority.Low => "prioridad baja",
+            _ => "prioridad media"
+        });
 
-        return char.ToUpperInvariant(parts[0][0]) + parts[0][1..] + (parts.Count > 1
-            ? " · " + string.Join(" · ", parts.Skip(1))
-            : "") + ".";
+        if (gapEndsAtEvent)
+            parts.Add($"cabe antes de tu próximo evento ({availableMinutes} min libres)");
+
+        var text = string.Join(" · ", parts);
+        return char.ToUpperInvariant(text[0]) + text[1..] + ".";
     }
 }

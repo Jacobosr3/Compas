@@ -38,6 +38,8 @@ export const workItemsApi = {
     api.post<SubtaskDto>(`/api/workitems/${id}/subtasks`, { title }),
   updateSubtask: (id: number, subtaskId: number, title: string, isCompleted: boolean) =>
     api.put<void>(`/api/workitems/${id}/subtasks/${subtaskId}`, { title, isCompleted }),
+  reorderSubtasks: (id: number, subtaskIds: number[]) =>
+    api.put<void>(`/api/workitems/${id}/subtasks/order`, { subtaskIds }),
   removeSubtask: (id: number, subtaskId: number) =>
     api.delete<void>(`/api/workitems/${id}/subtasks/${subtaskId}`),
 };
@@ -51,6 +53,17 @@ export const calendarEventsApi = {
 
 export const plannerApi = {
   today: () => api.get<DailyPlanDto>("/api/planner/today"),
-  generate: (date?: string) => api.post<DailyPlanDto>(`/api/planner/generate${date ? `?date=${date}` : ""}`),
-  replan: () => api.post<DailyPlanDto>("/api/planner/replan"),
+  // `minutes`: tiempo máximo a dedicar a tareas; sin él se rellena todo el día.
+  generate: (minutes?: number, date?: string) => {
+    const params = new URLSearchParams();
+    if (date) params.set("date", date);
+    if (minutes) params.set("minutes", String(minutes));
+    const qs = params.toString();
+    return api.post<DailyPlanDto>(`/api/planner/generate${qs ? `?${qs}` : ""}`);
+  },
+  replan: (minutes?: number) =>
+    api.post<DailyPlanDto>(`/api/planner/replan${minutes ? `?minutes=${minutes}` : ""}`),
+  clear: () => api.post<DailyPlanDto>("/api/planner/clear"),
+  reorder: (workItemIds: number[], minutes?: number) =>
+    api.post<DailyPlanDto>(`/api/planner/reorder${minutes ? `?minutes=${minutes}` : ""}`, { workItemIds }),
 };

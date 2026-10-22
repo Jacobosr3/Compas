@@ -181,6 +181,31 @@ export function SubtaskPanel({
   onChanged: () => void;
 }) {
   const [title, setTitle] = useState("");
+  // Orden optimista mientras se guarda; solo vale mientras `subtasks` sea el mismo array
+  // sobre el que se calculó (al recargar llega el orden real del servidor).
+  const [pending, setPending] = useState<{ base: SubtaskDto[]; ids: number[] } | null>(null);
+  const [dragId, setDragId] = useState<number | null>(null);
+  const [overId, setOverId] = useState<number | null>(null);
+
+  const shown =
+    pending && pending.base === subtasks
+      ? pending.ids.map((id) => subtasks.find((s) => s.id === id)).filter((s): s is SubtaskDto => !!s)
+      : subtasks;
+
+  async function moveTo(id: number, toIndex: number) {
+    const ids = shown.map((s) => s.id).filter((x) => x !== id);
+    ids.splice(toIndex, 0, id);
+    if (ids.every((x, i) => x === shown[i]?.id)) return;
+
+    setPending({ base: subtasks, ids });
+    try {
+      await workItemsApi.reorderSubtasks(taskId, ids);
+      onChanged();
+    } catch (err) {
+      setPending(null);
+      alert("No se pudo guardar: " + (err instanceof Error ? err.message : String(err)));
+    }
+  }
 
   async function run(action: () => Promise<unknown>) {
     try {
@@ -202,9 +227,33 @@ export function SubtaskPanel({
   }
 
   return (
-    <div className="subtasks">
-      {subtasks.map((s) => (
-        <SubtaskRow key={s.id} taskId={taskId} subtask={s} run={run} />
+    // Los eventos de arrastre no deben subir a un posible contenedor arrastrable (p. ej. la tarjeta del tablero).
+    <div
+      className="subtasks"
+      onDragStart={(e) => e.stopPropagation()}
+      onDragOver={(e) => e.stopPropagation()}
+      onDrop={(e) => e.stopPropagation()}
+    >
+      {shown.map((s, index) => (
+        <SubtaskRow
+          key={s.id}
+          taskId={taskId}
+          subtask={s}
+          run={run}
+          dragging={dragId === s.id}
+          over={overId === s.id && dragId !== s.id}
+          onDragStart={() => setDragId(s.id)}
+          onDragOver={() => dragId !== null && setOverId(s.id)}
+          onDrop={() => {
+            if (dragId !== null) moveTo(dragId, index);
+            setDragId(null);
+            setOverId(null);
+          }}
+          onDragEnd={() => {
+            setDragId(null);
+            setOverId(null);
+          }}
+        />
       ))}
 
       <div className="quick-add">
@@ -225,10 +274,22 @@ function SubtaskRow({
   taskId,
   subtask,
   run,
+  dragging,
+  over,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
 }: {
   taskId: number;
   subtask: SubtaskDto;
   run: (action: () => Promise<unknown>) => Promise<void>;
+  dragging: boolean;
+  over: boolean;
+  onDragStart: () => void;
+  onDragOver: () => void;
+  onDrop: () => void;
+  onDragEnd: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(subtask.title);
@@ -254,7 +315,24 @@ function SubtaskRow({
   }
 
   return (
-    <div className="subtask-row">
+    <div
+      className={"subtask-row" + (dragging ? " dragging" : "") + (over ? " drag-over" : "")}
+      draggable={!editing}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", String(subtask.id));
+        onDragStart();
+      }}
+      onDragOver={(e) => {
+        e.preventDefault();
+        onDragOver();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        onDrop();
+      }}
+      onDragEnd={onDragEnd}
+    >
       {editing ? (
         <input
           className="subtask-edit"

@@ -6,7 +6,6 @@ export type ProjectStatus = "Active" | "OnHold" | "Completed" | "Archived";
 export type WorkItemStatus =
   | "Pending"
   | "Scheduled"
-  | "InProgress"
   | "Completed"
   | "Cancelled";
 

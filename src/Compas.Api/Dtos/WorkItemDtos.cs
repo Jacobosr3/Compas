@@ -21,6 +21,9 @@ public record CreateSubtaskDto(string Title);
 
 public record UpdateSubtaskDto(string Title, bool IsCompleted);
 
+/// <summary>Ids de las subtareas de una tarea, en el orden deseado.</summary>
+public record ReorderSubtasksDto(List<int> SubtaskIds);
+
 public record CreateWorkItemDto(
     string Title,
     string? Description,

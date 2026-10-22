@@ -38,6 +38,8 @@ export const workItemsApi = {
     api.post<SubtaskDto>(`/api/workitems/${id}/subtasks`, { title }),
   updateSubtask: (id: number, subtaskId: number, title: string, isCompleted: boolean) =>
     api.put<void>(`/api/workitems/${id}/subtasks/${subtaskId}`, { title, isCompleted }),
+  reorderSubtasks: (id: number, subtaskIds: number[]) =>
+    api.put<void>(`/api/workitems/${id}/subtasks/order`, { subtaskIds }),
   removeSubtask: (id: number, subtaskId: number) =>
     api.delete<void>(`/api/workitems/${id}/subtasks/${subtaskId}`),
 };

@@ -39,4 +39,7 @@ public class WorkItem
     public int? ParentId { get; set; }
     public WorkItem? Parent { get; set; }
     public List<WorkItem> Subtasks { get; set; } = new();
+
+    /// <summary>Posición de una subtarea dentro de su tarea padre (se ordena de menor a mayor, y por Id si empatan).</summary>
+    public int SortOrder { get; set; }
 }

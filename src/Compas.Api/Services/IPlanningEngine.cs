@@ -36,9 +36,24 @@ public interface IPlanningEngine
     /// Momento a partir del cual se puede planificar (para "hoy" suele ser el instante
     /// actual, para generar un día completo desde cero es el inicio de la jornada).
     /// </param>
+    /// <param name="budgetMinutes">
+    /// Tiempo máximo (en minutos) que el usuario quiere dedicar a tareas. Los descansos no
+    /// cuentan. Null = sin límite: se rellena todo el día.
+    /// </param>
+    /// <param name="preferredOrder">
+    /// Ids de tarea en el orden que el usuario ha elegido a mano. Se colocan antes que el
+    /// resto (por ese orden) siempre que quepan; lo que no esté en la lista sigue la puntuación.
+    /// </param>
+    /// <param name="exactStart">
+    /// Si es true se empieza exactamente en <paramref name="effectiveStart"/> (planificar "desde
+    /// ahora", aunque sea de madrugada). Si es false, no se empieza antes del inicio de la jornada.
+    /// </param>
     List<EngineBlock> BuildPlan(
         DateOnly date,
         IReadOnlyList<CalendarEvent> fixedEvents,
         IReadOnlyList<WorkItem> pendingItems,
-        DateTime effectiveStart);
+        DateTime effectiveStart,
+        int? budgetMinutes = null,
+        IReadOnlyList<int>? preferredOrder = null,
+        bool exactStart = false);
 }

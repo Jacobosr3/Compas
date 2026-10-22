@@ -14,6 +14,9 @@ public record PlanEntryDto(
     int? WorkItemId,
     int? CalendarEventId);
 
+/// <summary>Orden manual de las tareas del plan: ids de WorkItem, de la primera a la última.</summary>
+public record ReorderPlanDto(List<int> WorkItemIds);
+
 public record DailyPlanDto(
     DateOnly Date,
     DateTime GeneratedAt,

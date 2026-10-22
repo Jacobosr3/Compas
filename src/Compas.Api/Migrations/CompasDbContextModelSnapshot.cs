@@ -188,6 +188,9 @@ namespace Compas.Api.Migrations
                     b.Property<DateTime?>("ScheduledStart")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("INTEGER");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)

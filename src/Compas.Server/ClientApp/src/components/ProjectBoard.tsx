@@ -6,7 +6,7 @@ import { fmtDate, priorityLabel, statusLabel } from "../utils/format";
 
 export type BoardMode = "status" | "week";
 
-const STATUS_COLUMNS: WorkItemStatus[] = ["Pending", "Scheduled", "InProgress", "Completed"];
+const STATUS_COLUMNS: WorkItemStatus[] = ["Pending", "Scheduled", "Completed"];
 const ALL_STATUSES: WorkItemStatus[] = [...STATUS_COLUMNS, "Cancelled"];
 
 /** Más urgente primero. */

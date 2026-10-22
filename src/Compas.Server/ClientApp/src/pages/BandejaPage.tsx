@@ -11,7 +11,6 @@ const STATUS_FILTERS: { value: WorkItemStatus | "all"; label: string }[] = [
   { value: "all", label: "Todas" },
   { value: "Pending", label: "Pendientes" },
   { value: "Scheduled", label: "Programadas" },
-  { value: "InProgress", label: "En curso" },
   { value: "Completed", label: "Completadas" },
 ];
 
@@ -38,7 +37,6 @@ export function BandejaPage() {
   const projects = useApiData(() => projectsApi.list(), []);
 
   const [modalTask, setModalTask] = useState<WorkItemDto | "new" | null>(null);
-  const [quickTitle, setQuickTitle] = useState("");
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   function toggleExpanded(id: number) {
@@ -56,22 +54,6 @@ export function BandejaPage() {
       : tasks.status === "loading"
         ? "loading"
         : "ok";
-
-  async function quickAdd() {
-    const title = quickTitle.trim();
-
-    if (!title) return;
-
-    await workItemsApi.create({
-      title,
-      priority: "Medium",
-      estimatedHours: 0,
-      estimatedMinutes: 30,
-    });
-
-    setQuickTitle("");
-    tasks.reload();
-  }
 
   return (
     <main className="main">
@@ -123,20 +105,6 @@ export function BandejaPage() {
               </button>
             ))}
         </div>
-      </div>
-
-      <div
-        className="quick-add"
-        style={{ marginBottom: 18, maxWidth: 420 }}
-      >
-        <input
-          placeholder="Nueva tarea rápida…"
-          value={quickTitle}
-          onChange={(e) => setQuickTitle(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && quickAdd()}
-        />
-
-        <button onClick={quickAdd}>Añadir</button>
       </div>
 
       {status === "loading" && (

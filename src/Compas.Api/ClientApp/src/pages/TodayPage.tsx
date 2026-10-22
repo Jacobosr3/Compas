@@ -35,10 +35,10 @@ export function TodayPage() {
         <h2>Tu día</h2>
         <div className="actions-inline">
           <button className="link-btn" onClick={() => runAction(() => plannerApi.generate(), reloadAll)}>
-            Generar plan del día
+            Plan del día
           </button>
           <button className="link-btn" onClick={() => runAction(() => plannerApi.replan(), reloadAll)}>
-            Replanificar desde ahora
+            Planificar desde ahora
           </button>
         </div>
       </div>
@@ -148,7 +148,7 @@ function NowCard({
             className="btn-primary"
             onClick={() => runAction(() => plannerApi.generate(), onChanged)}
           >
-            Generar plan del día
+            Plan del día
           </button>
         </div>
       </section>
