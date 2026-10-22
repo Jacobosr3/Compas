@@ -90,6 +90,10 @@ export function BandejaPage() {
         <h2>Tareas</h2>
 
         <div className="actions-inline">
+          <button className="btn-primary" onClick={() => setModalTask("new")}>
+            + Nueva tarea
+          </button>
+
           <div className="segmented" role="tablist" aria-label="Vista de tareas">
             {VIEWS.map((v) => (
               <button
