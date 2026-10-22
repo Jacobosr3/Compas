@@ -542,6 +542,14 @@ function TimeBudgetField({
   budget?: number;
   onChange: (next: TimeInput) => void;
 }) {
+  const total = budget ?? 0;
+
+  /** Fija el total en minutos repartiéndolo en horas y minutos; 0 = sin límite (campos vacíos). */
+  function setTotal(minutes: number) {
+    const m = Math.max(0, Math.min(minutes, 99 * 60 + 59));
+    onChange(m === 0 ? { hours: "", minutes: "" } : { hours: String(Math.floor(m / 60)), minutes: String(m % 60) });
+  }
+
   return (
     <div className="budget-box">
       <div className="budget-text">
@@ -551,7 +559,10 @@ function TimeBudgetField({
         </span>
       </div>
       <div className="budget-inputs">
-        <label className="budget-unit">
+        <div className="budget-unit">
+          <button type="button" className="step-btn" aria-label="Quitar una hora" disabled={total < 60} onClick={() => setTotal(total - 60)}>
+            −
+          </button>
           <input
             type="number"
             min={0}
@@ -561,8 +572,14 @@ function TimeBudgetField({
             onChange={(e) => onChange({ ...time, hours: e.target.value })}
           />
           <span>h</span>
-        </label>
-        <label className="budget-unit">
+          <button type="button" className="step-btn" aria-label="Añadir una hora" onClick={() => setTotal(total + 60)}>
+            +
+          </button>
+        </div>
+        <div className="budget-unit">
+          <button type="button" className="step-btn" aria-label="Quitar 5 minutos" disabled={total === 0} onClick={() => setTotal(total - 5)}>
+            −
+          </button>
           <input
             type="number"
             min={0}
@@ -572,7 +589,31 @@ function TimeBudgetField({
             onChange={(e) => onChange({ ...time, minutes: e.target.value })}
           />
           <span>min</span>
-        </label>
+          <button type="button" className="step-btn" aria-label="Añadir 5 minutos" onClick={() => setTotal(total + 5)}>
+            +
+          </button>
+        </div>
+      </div>
+      <div className="budget-presets" role="group" aria-label="Tiempos habituales">
+        {[30, 60, 120, 240].map((m) => (
+          <button
+            key={m}
+            type="button"
+            className={"tag tag-button" + (total === m ? " active" : "")}
+            aria-pressed={total === m}
+            onClick={() => setTotal(m)}
+          >
+            {fmtDuration(m)}
+          </button>
+        ))}
+        <button
+          type="button"
+          className={"tag tag-button" + (total === 0 ? " active" : "")}
+          aria-pressed={total === 0}
+          onClick={() => setTotal(0)}
+        >
+          Sin límite
+        </button>
       </div>
     </div>
   );

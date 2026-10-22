@@ -1065,8 +1065,8 @@
 .budget-unit {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 0 10px 0 2px;
+  gap: 4px;
+  padding: 0 4px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--radius-inputs);
@@ -1092,6 +1092,41 @@
 }
 .budget-unit input:focus {
   outline: none;
+}
+.step-btn {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+}
+.step-btn:hover:not(:disabled) {
+  background: var(--color-canvas);
+  color: var(--text);
+}
+.step-btn:active:not(:disabled) {
+  transform: scale(0.92);
+}
+.budget-presets {
+  flex-basis: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.budget-presets .tag-button {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.budget-presets .tag-button.active {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-surface-alt);
 }
 .budget-unit input::-webkit-outer-spin-button,
 .budget-unit input::-webkit-inner-spin-button {
