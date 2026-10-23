@@ -42,11 +42,6 @@ export function RightRail() {
                 <span className="n">{Math.round(p.progressPercent)}%</span>
               </div>
               <div className="bar"><i style={{ width: `${Math.round(p.progressPercent)}%` }} /></div>
-              {p.targetDate && (
-                <div className="proj-due">
-                  Hito: {new Date(p.targetDate).toLocaleDateString("es-ES")}
-                </div>
-              )}
             </div>
           ))
         )}

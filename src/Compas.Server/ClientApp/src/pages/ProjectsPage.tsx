@@ -6,7 +6,7 @@ import { ConnectionBanner } from "../components/ConnectionBanner";
 import { useApiData } from "../hooks/useApiData";
 import { projectsApi } from "../api";
 import type { ProjectDto, ProjectStatus } from "../api/types";
-import { fmtDate, projectStatusLabel } from "../utils/format";
+import { projectStatusLabel } from "../utils/format";
 
 const STATUS_OPTIONS: ProjectStatus[] = ["Active", "OnHold", "Completed", "Archived"];
 
@@ -15,7 +15,6 @@ interface FormState {
   description: string;
   colorHex: string;
   status: ProjectStatus;
-  targetDate: string;
 }
 
 const emptyForm: FormState = {
@@ -23,7 +22,6 @@ const emptyForm: FormState = {
   description: "",
   colorHex: "#0A0A0A",
   status: "Active",
-  targetDate: "",
 };
 
 export function ProjectsPage() {
@@ -80,7 +78,6 @@ export function ProjectsPage() {
                 <span>
                   {p.completedWorkItems}/{p.totalWorkItems} tareas completadas
                 </span>
-                {p.targetDate && <span>Próximo hito: {fmtDate(p.targetDate)}</span>}
               </div>
               <div className="bar" style={{ marginTop: 8, maxWidth: 220 }}>
                 <i style={{ width: `${Math.round(p.progressPercent)}%` }} />
@@ -145,7 +142,6 @@ function ProjectModal({
           description: project.description ?? "",
           colorHex: project.colorHex,
           status: project.status,
-          targetDate: project.targetDate ? project.targetDate.slice(0, 10) : "",
         },
   );
   const [saving, setSaving] = useState(false);
@@ -154,13 +150,11 @@ function ProjectModal({
     if (!form.name.trim()) return;
     setSaving(true);
     try {
-      const targetDate = form.targetDate ? new Date(form.targetDate).toISOString() : null;
       if (isNew) {
         await projectsApi.create({
           name: form.name,
           description: form.description || null,
           colorHex: form.colorHex,
-          targetDate,
         });
       } else {
         await projectsApi.update(project.id, {
@@ -168,7 +162,6 @@ function ProjectModal({
           description: form.description || null,
           colorHex: form.colorHex,
           status: form.status,
-          targetDate,
         });
       }
       onSaved();
@@ -195,15 +188,9 @@ function ProjectModal({
           <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
         </div>
 
-        <div className="field-row">
-          <div className="field">
-            <label>Color</label>
-            <input type="color" value={form.colorHex} onChange={(e) => setForm({ ...form, colorHex: e.target.value })} />
-          </div>
-          <div className="field">
-            <label>Próximo hito</label>
-            <input type="date" value={form.targetDate} onChange={(e) => setForm({ ...form, targetDate: e.target.value })} />
-          </div>
+        <div className="field">
+          <label>Color</label>
+          <input type="color" value={form.colorHex} onChange={(e) => setForm({ ...form, colorHex: e.target.value })} />
         </div>
 
         {!isNew && (

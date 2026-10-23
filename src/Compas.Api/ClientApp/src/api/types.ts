@@ -22,7 +22,6 @@ export interface ProjectDto {
   description: string | null;
   colorHex: string;
   status: ProjectStatus;
-  targetDate: string | null;
   progressPercent: number;
   totalWorkItems: number;
   completedWorkItems: number;
@@ -32,7 +31,6 @@ export interface CreateProjectDto {
   name: string;
   description?: string | null;
   colorHex?: string | null;
-  targetDate?: string | null;
 }
 
 export interface UpdateProjectDto {
@@ -40,7 +38,6 @@ export interface UpdateProjectDto {
   description: string | null;
   colorHex: string;
   status: ProjectStatus;
-  targetDate: string | null;
 }
 
 export interface WorkItemDto {

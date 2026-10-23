@@ -210,7 +210,7 @@ export function ProjectBoard({
               <div className="board-cards">
                 {items.length === 0 && <div className="empty-mini">Sin tareas</div>}
                 {items.map((t) => (
-                  <BoardCard key={t.id} showProject={showProject} task={t} draggable onEdit={onEdit} onStatus={changeStatus} onChanged={onChanged} />
+                  <BoardCard key={t.id} showProject={showProject} showDue={false} task={t} draggable onEdit={onEdit} onStatus={changeStatus} onChanged={onChanged} />
                 ))}
               </div>
             </section>
@@ -228,7 +228,7 @@ export function ProjectBoard({
           <div className="board-cards">
             {undated.length === 0 && <div className="empty-mini">Sin tareas</div>}
             {undated.map((t) => (
-              <BoardCard key={t.id} showProject={showProject} task={t} draggable onEdit={onEdit} onStatus={changeStatus} onChanged={onChanged} />
+              <BoardCard key={t.id} showProject={showProject} showDue={false} task={t} draggable onEdit={onEdit} onStatus={changeStatus} onChanged={onChanged} />
             ))}
           </div>
         </section>
@@ -246,6 +246,7 @@ function BoardCard({
   task: t,
   draggable = false,
   showProject = false,
+  showDue = true,
   onEdit,
   onStatus,
   onChanged,
@@ -253,6 +254,8 @@ function BoardCard({
   task: WorkItemDto;
   draggable?: boolean;
   showProject?: boolean;
+  /** Muestra "Vence ..."; se oculta en la vista semanal, donde la columna ya es ese día. */
+  showDue?: boolean;
   onEdit: (task: WorkItemDto) => void;
   onStatus: (task: WorkItemDto, status: WorkItemStatus) => void;
   onChanged: () => void;
@@ -278,7 +281,7 @@ function BoardCard({
           {t.estimatedHours > 0 ? `${t.estimatedHours}h ` : ""}
           {t.estimatedMinutes > 0 || t.estimatedHours === 0 ? `${t.estimatedMinutes}m` : ""}
         </span>
-        {t.dueDate && <span>Vence {fmtDate(t.dueDate)}</span>}
+        {showDue && t.dueDate && <span>Vence {fmtDate(t.dueDate)}</span>}
         {t.subtasks.length > 0 && (
           <button
             className="tag tag-button"

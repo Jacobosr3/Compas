@@ -38,7 +38,6 @@ public class ProjectsController : ControllerBase
             Name = dto.Name,
             Description = dto.Description,
             ColorHex = string.IsNullOrWhiteSpace(dto.ColorHex) ? "#7C9EFF" : dto.ColorHex,
-            TargetDate = dto.TargetDate,
             Status = ProjectStatus.Active
         };
 
@@ -60,7 +59,6 @@ public class ProjectsController : ControllerBase
         project.Name = dto.Name;
         project.Description = dto.Description;
         project.ColorHex = dto.ColorHex;
-        project.TargetDate = dto.TargetDate;
         project.Status = status;
 
         await _db.SaveChangesAsync(ct);
@@ -85,6 +83,6 @@ public class ProjectsController : ControllerBase
         var progress = total == 0 ? 0 : Math.Round(completed * 100.0 / total, 0);
 
         return new ProjectDto(p.Id, p.Name, p.Description, p.ColorHex, p.Status.ToString(),
-            p.TargetDate, progress, total, completed);
+            progress, total, completed);
     }
 }

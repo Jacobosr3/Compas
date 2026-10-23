@@ -207,7 +207,6 @@ export function TodayPage() {
                       <div className="proj-name">{p.name}</div>
                       <div className="proj-sub">
                         {p.completedWorkItems}/{p.totalWorkItems} tareas
-                        {p.targetDate ? ` · ${new Date(p.targetDate).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}` : ""}
                       </div>
                     </div>
                   </Link>

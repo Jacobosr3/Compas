@@ -6,7 +6,6 @@ public record ProjectDto(
     string? Description,
     string ColorHex,
     string Status,
-    DateTime? TargetDate,
     double ProgressPercent,
     int TotalWorkItems,
     int CompletedWorkItems);
@@ -14,12 +13,10 @@ public record ProjectDto(
 public record CreateProjectDto(
     string Name,
     string? Description,
-    string? ColorHex,
-    DateTime? TargetDate);
+    string? ColorHex);
 
 public record UpdateProjectDto(
     string Name,
     string? Description,
     string ColorHex,
-    string Status,
-    DateTime? TargetDate);
+    string Status);

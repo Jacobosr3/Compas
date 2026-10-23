@@ -7,7 +7,7 @@ import { ProjectBoard } from "../components/ProjectBoard";
 import { useApiData } from "../hooks/useApiData";
 import { projectsApi, workItemsApi } from "../api";
 import type { WorkItemDto } from "../api/types";
-import { fmtDate, projectStatusLabel } from "../utils/format";
+import { projectStatusLabel } from "../utils/format";
 
 type Filter = "all" | "open" | "done";
 type View = "status" | "week" | "list";
@@ -85,7 +85,6 @@ export function ProjectDetailPage() {
             <span>
               {p.completedWorkItems}/{p.totalWorkItems} tareas completadas
             </span>
-            {p.targetDate && <span>Próximo hito: {fmtDate(p.targetDate)}</span>}
           </div>
           {p.description && <p className="project-desc">{p.description}</p>}
           <div className="bar" style={{ marginTop: 8, maxWidth: 260 }}>
