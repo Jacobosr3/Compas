@@ -51,6 +51,14 @@ export const calendarEventsApi = {
   remove: (id: number) => api.delete<void>(`/api/calendarevents/${id}`),
 };
 
+function plannerQuery(minutes?: number, projectIds?: number[]): string {
+  const params = new URLSearchParams();
+  if (minutes) params.set("minutes", String(minutes));
+  projectIds?.forEach((id) => params.append("projectIds", String(id)));
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
 export const plannerApi = {
   today: () => api.get<DailyPlanDto>("/api/planner/today"),
   // `minutes`: tiempo máximo a dedicar a tareas; sin él se rellena todo el día.
@@ -61,9 +69,10 @@ export const plannerApi = {
     const qs = params.toString();
     return api.post<DailyPlanDto>(`/api/planner/generate${qs ? `?${qs}` : ""}`);
   },
-  replan: (minutes?: number) =>
-    api.post<DailyPlanDto>(`/api/planner/replan${minutes ? `?minutes=${minutes}` : ""}`),
+  // `projectIds`: solo tareas de esos proyectos (0 = sin proyecto); vacío = todos.
+  replan: (minutes?: number, projectIds?: number[]) =>
+    api.post<DailyPlanDto>(`/api/planner/replan${plannerQuery(minutes, projectIds)}`),
   clear: () => api.post<DailyPlanDto>("/api/planner/clear"),
-  reorder: (workItemIds: number[], minutes?: number) =>
-    api.post<DailyPlanDto>(`/api/planner/reorder${minutes ? `?minutes=${minutes}` : ""}`, { workItemIds }),
+  reorder: (workItemIds: number[], minutes?: number, projectIds?: number[]) =>
+    api.post<DailyPlanDto>(`/api/planner/reorder${plannerQuery(minutes, projectIds)}`, { workItemIds }),
 };

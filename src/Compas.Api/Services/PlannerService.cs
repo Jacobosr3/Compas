@@ -51,6 +51,7 @@ public class PlannerService
         IReadOnlyList<int>? preferredOrder = null,
         bool spillToNextDays = false,
         bool exactStart = false,
+        IReadOnlyList<int>? projectIds = null,
         CancellationToken ct = default)
     {
         var previousRun = await _db.PlanRuns
@@ -76,7 +77,10 @@ public class PlannerService
 
         // El motor planifica un día cada vez; lo que no cabe pasa al siguiente (desde el inicio de su jornada).
         var engineBlocks = new List<EngineBlock>();
-        var remaining = pendingTasks.ToList();
+        // Con proyectos elegidos solo se planifican sus tareas (0 = tareas sin proyecto).
+        var remaining = projectIds is { Count: > 0 }
+            ? pendingTasks.Where(t => projectIds.Contains(t.ProjectId ?? 0)).ToList()
+            : pendingTasks.ToList();
         var budgetLeft = budgetMinutes;
         var planDay = date;
         var planStart = effectiveStart;
@@ -176,11 +180,11 @@ public class PlannerService
     /// a los días siguientes. Esto es lo que se llama cuando cambia algo (nueva tarea urgente,
     /// reunión añadida, etc.) y el plan tiene que adaptarse.
     /// </summary>
-    public Task<DailyPlanDto> ReplanFromNowAsync(int? budgetMinutes = null, CancellationToken ct = default)
+    public Task<DailyPlanDto> ReplanFromNowAsync(int? budgetMinutes = null, IReadOnlyList<int>? projectIds = null, CancellationToken ct = default)
     {
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
-        return GenerateAsync(today, now, budgetMinutes, null, spillToNextDays: true, exactStart: true, ct: ct);
+        return GenerateAsync(today, now, budgetMinutes, null, spillToNextDays: true, exactStart: true, projectIds: projectIds, ct: ct);
     }
 
     /// <summary>
@@ -189,7 +193,7 @@ public class PlannerService
     /// fijos, con esas tareas primero y en ese orden. (Planificar desde "ahora" movería
     /// todo el plan al instante actual y descartaría lo que ya queda atrás.)
     /// </summary>
-    public async Task<DailyPlanDto> ReorderTodayAsync(IReadOnlyList<int> workItemIds, int? budgetMinutes = null, CancellationToken ct = default)
+    public async Task<DailyPlanDto> ReorderTodayAsync(IReadOnlyList<int> workItemIds, int? budgetMinutes = null, IReadOnlyList<int>? projectIds = null, CancellationToken ct = default)
     {
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
@@ -208,7 +212,7 @@ public class PlannerService
             .FirstOrDefaultAsync(ct);
         var spill = lastStart is not null && DateOnly.FromDateTime(lastStart.Value) > today;
 
-        return await GenerateAsync(today, firstStart ?? now, budgetMinutes, workItemIds, spillToNextDays: spill, exactStart: true, ct: ct);
+        return await GenerateAsync(today, firstStart ?? now, budgetMinutes, workItemIds, spillToNextDays: spill, exactStart: true, projectIds: projectIds, ct: ct);
     }
 
     /// <summary>

@@ -5,11 +5,12 @@ import { ConnectionBanner } from "../components/ConnectionBanner";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { useApiData } from "../hooks/useApiData";
 import { plannerApi, projectsApi, workItemsApi } from "../api";
-import type { PlanEntryDto, WorkItemDto } from "../api/types";
+import type { PlanEntryDto, ProjectDto, WorkItemDto } from "../api/types";
 import { SubtasksModal, TaskModal } from "../components/TaskParts";
 import { fmtDateLong, fmtDuration, totalMinutes, fmtTime } from "../utils/format";
 
 const TIME_KEY = "compas.planTime";
+const PROJECTS_KEY = "compas.planProjects";
 
 type TimeInput = { hours: string; minutes: string };
 
@@ -21,6 +22,17 @@ function readSavedTime(): TimeInput {
     /* sin almacenamiento o dato corrupto: se empieza sin límite */
   }
   return { hours: "", minutes: "" };
+}
+
+/** Proyectos elegidos la última vez que se planificó desde ahora (0 = sin proyecto); vacío = todos. */
+function readSavedProjects(): number[] {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PROJECTS_KEY) ?? "[]");
+    if (Array.isArray(saved) && saved.every((n) => Number.isInteger(n))) return saved;
+  } catch {
+    /* sin almacenamiento o dato corrupto: todos los proyectos */
+  }
+  return [];
 }
 
 /** Minutos a dedicar a tareas según lo escrito; undefined = sin límite. */
@@ -101,6 +113,7 @@ export function TodayPage() {
   const inbox = useApiData(() => workItemsApi.inbox(), []);
   const [quickTitle, setQuickTitle] = useState("");
   const [time, setTime] = useState(readSavedTime);
+  const [savedProjectIds, setSavedProjectIds] = useState(readSavedProjects);
   const [replanning, setReplanning] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [editingTask, setEditingTask] = useState<WorkItemDto | null>(null);
@@ -108,6 +121,19 @@ export function TodayPage() {
   // Tiempo máximo a dedicar a tareas del plan actual, en minutos; undefined = sin límite.
   // Solo lo fija "Planificar desde ahora"; "Plan del día" lo borra.
   const budget = budgetFrom(time);
+  // Proyectos del plan actual. Se descartan los que ya no existen para no acabar con un plan vacío.
+  const planProjectIds = projects.data
+    ? savedProjectIds.filter((id) => id === 0 || projects.data!.some((p) => p.id === id))
+    : savedProjectIds;
+
+  function changeProjects(next: number[]) {
+    setSavedProjectIds(next);
+    try {
+      localStorage.setItem(PROJECTS_KEY, JSON.stringify(next));
+    } catch {
+      /* sin almacenamiento: solo se pierde la preferencia */
+    }
+  }
 
   function changeTime(next: TimeInput) {
     setTime(next);
@@ -118,16 +144,18 @@ export function TodayPage() {
     }
   }
 
-  /** Plan completo desde las 08:00, sin límite de tiempo para tareas. */
+  /** Plan completo desde las 08:00, sin límite de tiempo para tareas y con todos los proyectos. */
   function generatePlan() {
     changeTime({ hours: "", minutes: "" });
+    changeProjects([]);
     runAction(() => plannerApi.generate(), reloadAll);
   }
 
-  function confirmReplan(next: TimeInput) {
+  function confirmReplan(next: TimeInput, projectIds: number[]) {
     changeTime(next);
+    changeProjects(projectIds);
     setReplanning(false);
-    runAction(() => plannerApi.replan(budgetFrom(next)), reloadAll);
+    runAction(() => plannerApi.replan(budgetFrom(next), projectIds), reloadAll);
   }
 
   const status = plan.status === "error" || projects.status === "error" || inbox.status === "error"
@@ -184,7 +212,7 @@ export function TodayPage() {
           <Timeline
             entries={entries}
             loading={plan.status === "loading"}
-            onReorder={(ids) => runAction(() => plannerApi.reorder(ids, budget), reloadAll)}
+            onReorder={(ids) => runAction(() => plannerApi.reorder(ids, budget, planProjectIds), reloadAll)}
           />
         </div>
 
@@ -313,7 +341,15 @@ export function TodayPage() {
         />
       )}
 
-      {replanning && <ReplanModal initial={time} onConfirm={confirmReplan} onCancel={() => setReplanning(false)} />}
+      {replanning && (
+        <ReplanModal
+          initial={time}
+          initialProjectIds={planProjectIds}
+          projects={projects.data ?? []}
+          onConfirm={confirmReplan}
+          onCancel={() => setReplanning(false)}
+        />
+      )}
     </main>
   );
 }
@@ -482,15 +518,30 @@ function PlanActions({
 /** Pregunta cuánto tiempo dedicar a tareas y planifica desde la hora actual. */
 function ReplanModal({
   initial,
+  initialProjectIds,
+  projects,
   onConfirm,
   onCancel,
 }: {
   initial: TimeInput;
-  onConfirm: (time: TimeInput) => void;
+  initialProjectIds: number[];
+  projects: ProjectDto[];
+  onConfirm: (time: TimeInput, projectIds: number[]) => void;
   onCancel: () => void;
 }) {
   const [draft, setDraft] = useState(initial);
+  const [projectIds, setProjectIds] = useState(initialProjectIds);
   const budget = budgetFrom(draft);
+  const selectable = projects.filter((p) => p.status !== "Archived");
+
+  function toggleProject(id: number) {
+    setProjectIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
+  }
+
+  const projectHint =
+    projectIds.length === 0
+      ? "Todos los proyectos"
+      : projectIds.map((id) => (id === 0 ? "Sin proyecto" : projects.find((p) => p.id === id)?.name ?? "")).filter(Boolean).join(", ");
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -509,7 +560,8 @@ function ReplanModal({
         aria-labelledby="replan-title"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
-          if (e.key === "Enter") onConfirm(draft);
+          // Enter sobre un botón (chips, +/−) debe activar ese botón, no planificar.
+          if (e.key === "Enter" && !(e.target instanceof HTMLButtonElement)) onConfirm(draft, projectIds);
         }}
       >
         <h2 id="replan-title">Planificar desde ahora</h2>
@@ -517,12 +569,47 @@ function ReplanModal({
           Son las <b>{fmtTime(new Date().toISOString())}</b>. Se reparten tus tareas pendientes desde esta hora,
           respetando los eventos de la agenda. Lo que no quepa hoy pasa al día siguiente, desde las 08:00.
         </p>
+        <div className="budget-box">
+          <div className="budget-text">
+            <span className="budget-label">Proyectos</span>
+            <span className="budget-hint">{projectHint}</span>
+          </div>
+          <div className="budget-presets" role="group" aria-label="Proyectos a planificar">
+            <button
+              type="button"
+              className={"tag tag-button" + (projectIds.length === 0 ? " active" : "")}
+              aria-pressed={projectIds.length === 0}
+              onClick={() => setProjectIds([])}
+            >
+              Todos los proyectos
+            </button>
+            {selectable.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={"tag tag-button" + (projectIds.includes(p.id) ? " active" : "")}
+                aria-pressed={projectIds.includes(p.id)}
+                onClick={() => toggleProject(p.id)}
+              >
+                {p.name}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={"tag tag-button" + (projectIds.includes(0) ? " active" : "")}
+              aria-pressed={projectIds.includes(0)}
+              onClick={() => toggleProject(0)}
+            >
+              Sin proyecto
+            </button>
+          </div>
+        </div>
         <TimeBudgetField time={draft} budget={budget} onChange={setDraft} />
         <div className="modal-actions">
           <button className="btn-secondary" onClick={onCancel}>
             Cancelar
           </button>
-          <button className="btn-primary" onClick={() => onConfirm(draft)}>
+          <button className="btn-primary" onClick={() => onConfirm(draft, projectIds)}>
             Planificar
           </button>
         </div>

@@ -33,11 +33,12 @@ public class PlannerController : ControllerBase
     /// Vuelve a planificar el resto del día de hoy a partir de este instante.
     /// Llamar aquí cuando cambie algo: una tarea urgente nueva, una reunión añadida, etc.
     /// </summary>
+    /// <param name="projectIds">Solo se planifican tareas de estos proyectos (0 = tareas sin proyecto). Vacío = todos.</param>
     [HttpPost("replan")]
-    public async Task<ActionResult<DailyPlanDto>> Replan([FromQuery] int? minutes, CancellationToken ct)
+    public async Task<ActionResult<DailyPlanDto>> Replan([FromQuery] int? minutes, [FromQuery] int[]? projectIds, CancellationToken ct)
     {
         if (minutes is <= 0) return BadRequest("El tiempo a dedicar debe ser mayor que 0.");
-        return await _planner.ReplanFromNowAsync(minutes, ct);
+        return await _planner.ReplanFromNowAsync(minutes, projectIds, ct);
     }
 
     /// <summary>Vacía el plan de hoy y devuelve a la bandeja todas las tareas programadas.</summary>
@@ -47,9 +48,9 @@ public class PlannerController : ControllerBase
 
     /// <summary>Aplica el orden manual de tareas elegido por el usuario y recoloca el resto del día.</summary>
     [HttpPost("reorder")]
-    public async Task<ActionResult<DailyPlanDto>> Reorder([FromBody] ReorderPlanDto dto, [FromQuery] int? minutes, CancellationToken ct)
+    public async Task<ActionResult<DailyPlanDto>> Reorder([FromBody] ReorderPlanDto dto, [FromQuery] int? minutes, [FromQuery] int[]? projectIds, CancellationToken ct)
     {
         if (minutes is <= 0) return BadRequest("El tiempo a dedicar debe ser mayor que 0.");
-        return await _planner.ReorderTodayAsync(dto.WorkItemIds, minutes, ct);
+        return await _planner.ReorderTodayAsync(dto.WorkItemIds, minutes, projectIds, ct);
     }
 }
