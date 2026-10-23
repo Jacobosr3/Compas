@@ -111,6 +111,7 @@ export function TodayPage() {
   const plan = useApiData(() => plannerApi.today(), []);
   const projects = useApiData(() => projectsApi.list(), []);
   const inbox = useApiData(() => workItemsApi.inbox(), []);
+  const allTasks = useApiData(() => workItemsApi.list(), []);
   const [quickTitle, setQuickTitle] = useState("");
   const [time, setTime] = useState(readSavedTime);
   const [savedProjectIds, setSavedProjectIds] = useState(readSavedProjects);
@@ -122,9 +123,13 @@ export function TodayPage() {
   // Solo lo fija "Planificar desde ahora"; "Plan del día" lo borra.
   const budget = budgetFrom(time);
   // Proyectos del plan actual. Se descartan los que ya no existen para no acabar con un plan vacío.
+  // Los proyectos completados (y archivados) no se ofrecen para planificar.
+  const plannableProjects = (projects.data ?? []).filter((p) => p.status !== "Completed" && p.status !== "Archived");
   const planProjectIds = projects.data
-    ? savedProjectIds.filter((id) => id === 0 || projects.data!.some((p) => p.id === id))
+    ? savedProjectIds.filter((id) => id === 0 || plannableProjects.some((p) => p.id === id))
     : savedProjectIds;
+  // La tarjeta lateral de proyectos tampoco muestra los completados.
+  const openProjects = (projects.data ?? []).filter((p) => p.status !== "Completed");
 
   function changeProjects(next: number[]) {
     setSavedProjectIds(next);
@@ -151,6 +156,24 @@ export function TodayPage() {
     runAction(() => plannerApi.generate(), reloadAll);
   }
 
+  /** Marca como completada una tarea del plan. */
+  function completeTask(task: WorkItemDto) {
+    runAction(
+      () =>
+        workItemsApi.update(task.id, {
+          title: task.title,
+          description: task.description,
+          projectId: task.projectId,
+          priority: task.priority,
+          estimatedHours: task.estimatedHours,
+          estimatedMinutes: task.estimatedMinutes,
+          dueDate: task.dueDate,
+          status: "Completed",
+        }),
+      reloadAll,
+    );
+  }
+
   function confirmReplan(next: TimeInput, projectIds: number[]) {
     changeTime(next);
     changeProjects(projectIds);
@@ -168,6 +191,7 @@ export function TodayPage() {
     plan.reload();
     projects.reload();
     inbox.reload();
+    allTasks.reload();
   }
 
   async function quickAdd() {
@@ -211,6 +235,10 @@ export function TodayPage() {
           </div>
           <Timeline
             entries={entries}
+            tasksById={new Map((allTasks.data ?? []).map((t) => [t.id, t]))}
+            onEdit={setEditingTask}
+            onSteps={(t) => setStepsTaskId(t.id)}
+            onComplete={completeTask}
             loading={plan.status === "loading"}
             onReorder={(ids) => runAction(() => plannerApi.reorder(ids, budget, planProjectIds), reloadAll)}
           />
@@ -219,12 +247,12 @@ export function TodayPage() {
         <aside className="today-side">
           <div className="card glass">
             <h3>
-              Proyectos <span>{projects.data ? `${projects.data.length} activos` : "—"}</span>
+              Proyectos <span>{projects.data ? `${openProjects.length} activos` : "—"}</span>
             </h3>
-            {!projects.data || projects.data.length === 0 ? (
-              <div className="empty-mini">Aún no tienes proyectos.</div>
+            {openProjects.length === 0 ? (
+              <div className="empty-mini">No tienes proyectos abiertos.</div>
             ) : (
-              projects.data.slice(0, 5).map((p) => {
+              openProjects.slice(0, 5).map((p) => {
                 const pct = Math.round(p.progressPercent);
                 return (
                   <Link key={p.id} to={`/proyectos/${p.id}`} className="proj-row" style={{ ["--c" as string]: p.colorHex }}>
@@ -320,11 +348,11 @@ export function TodayPage() {
         />
       )}
 
-      {stepsTaskId !== null && inbox.data?.find((t) => t.id === stepsTaskId) && (
+      {stepsTaskId !== null && allTasks.data?.find((t) => t.id === stepsTaskId) && (
         <SubtasksModal
-          task={inbox.data.find((t) => t.id === stepsTaskId)!}
+          task={allTasks.data.find((t) => t.id === stepsTaskId)!}
           onClose={() => setStepsTaskId(null)}
-          onChanged={inbox.reload}
+          onChanged={reloadAll}
         />
       )}
 
@@ -345,7 +373,7 @@ export function TodayPage() {
         <ReplanModal
           initial={time}
           initialProjectIds={planProjectIds}
-          projects={projects.data ?? []}
+          projects={plannableProjects}
           onConfirm={confirmReplan}
           onCancel={() => setReplanning(false)}
         />
@@ -532,7 +560,6 @@ function ReplanModal({
   const [draft, setDraft] = useState(initial);
   const [projectIds, setProjectIds] = useState(initialProjectIds);
   const budget = budgetFrom(draft);
-  const selectable = projects.filter((p) => p.status !== "Archived");
 
   function toggleProject(id: number) {
     setProjectIds((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
@@ -583,7 +610,7 @@ function ReplanModal({
             >
               Todos los proyectos
             </button>
-            {selectable.map((p) => (
+            {projects.map((p) => (
               <button
                 key={p.id}
                 type="button"
@@ -719,10 +746,19 @@ function planDayLabel(date: Date, today: Date): string {
 function Timeline({
   entries,
   loading,
+  tasksById,
+  onEdit,
+  onSteps,
+  onComplete,
   onReorder,
 }: {
   entries: PlanEntryDto[];
   loading: boolean;
+  /** Tareas completas (con subtareas) para abrirlas desde su bloque. */
+  tasksById: Map<number, WorkItemDto>;
+  onEdit: (task: WorkItemDto) => void;
+  onSteps: (task: WorkItemDto) => void;
+  onComplete: (task: WorkItemDto) => void;
   onReorder: (workItemIds: number[]) => void;
 }) {
   const [dragId, setDragId] = useState<number | null>(null);
@@ -774,6 +810,7 @@ function Timeline({
         if (showDivider) dividerShown = true;
 
         const movableId = canReorder && entry.kind === "Task" ? entry.workItemId : null;
+        const task = entry.kind === "Task" && entry.workItemId != null ? tasksById.get(entry.workItemId) : undefined;
         const taskIndex = movableId != null ? taskIds.indexOf(movableId) : -1;
 
         const tag =
@@ -815,6 +852,19 @@ function Timeline({
                     (movableId != null && movableId === dragId ? " dragging" : "") +
                     (movableId != null && movableId === overId && dragId !== overId ? " drag-over" : "")
                   }
+                  role={task ? "button" : undefined}
+                  tabIndex={task ? 0 : undefined}
+                  onClick={task ? () => onEdit(task) : undefined}
+                  onKeyDown={
+                    task
+                      ? (e) => {
+                          if (e.target === e.currentTarget && (e.key === "Enter" || e.key === " ")) {
+                            e.preventDefault();
+                            onEdit(task);
+                          }
+                        }
+                      : undefined
+                  }
                   draggable={movableId != null}
                   onDragStart={() => movableId != null && setDragId(movableId)}
                   onDragOver={(e) => {
@@ -834,16 +884,41 @@ function Timeline({
                   }}
                 >
                   <div className="tl-main">
-                    <div className="tl-name">{entry.title}</div>
+                    <div className={"tl-name" + (task?.status === "Completed" ? " done" : "")}>{entry.title}</div>
                     <div className="tl-meta">
                       {tag && <span className="tag">{tag}</span>}
+                      {task?.status === "Completed" && <span className="tag">✓ Completada</span>}
                       {entry.wasRescheduled && <span className="tag moved">↻ Reordenado</span>}
+                      {task && task.subtasks.length > 0 && (
+                        <button
+                          className="tag tag-button"
+                          aria-haspopup="dialog"
+                          aria-label={`Ver pasos de "${task.title}"`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSteps(task);
+                          }}
+                        >
+                          ☑ {task.subtasks.filter((st) => st.isCompleted).length}/{task.subtasks.length}
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div className="tl-side">
                     <div className="tl-dur mono">{fmtDuration(Math.round((end.getTime() - start.getTime()) / 60000))}</div>
+                    {task && task.status !== "Completed" && task.status !== "Cancelled" && (
+                      <button
+                        className="btn-secondary tl-complete"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onComplete(task);
+                        }}
+                      >
+                        Completar
+                      </button>
+                    )}
                     {movableId != null && (
-                      <div className="tl-move">
+                      <div className="tl-move" onClick={(e) => e.stopPropagation()}>
                         <button
                           className="btn-ghost"
                           aria-label={`Subir "${entry.title}"`}

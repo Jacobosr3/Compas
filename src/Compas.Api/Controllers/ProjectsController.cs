@@ -1,6 +1,7 @@
 using Compas.Api.Data;
 using Compas.Api.Dtos;
 using Compas.Api.Models;
+using Compas.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,8 +12,13 @@ namespace Compas.Api.Controllers;
 public class ProjectsController : ControllerBase
 {
     private readonly CompasDbContext _db;
+    private readonly ProjectStatusService _projectStatus;
 
-    public ProjectsController(CompasDbContext db) => _db = db;
+    public ProjectsController(CompasDbContext db, ProjectStatusService projectStatus)
+    {
+        _db = db;
+        _projectStatus = projectStatus;
+    }
 
     [HttpGet]
     public async Task<ActionResult<List<ProjectDto>>> GetAll(CancellationToken ct)
@@ -43,6 +49,7 @@ public class ProjectsController : ControllerBase
 
         _db.Projects.Add(project);
         await _db.SaveChangesAsync(ct);
+        await _projectStatus.SyncAsync(new int?[] { project.Id }, ct); // sin tareas: nace archivado
 
         return CreatedAtAction(nameof(GetById), new { id = project.Id }, ToDto(project));
     }
@@ -62,6 +69,7 @@ public class ProjectsController : ControllerBase
         project.Status = status;
 
         await _db.SaveChangesAsync(ct);
+        await _projectStatus.SyncAsync(new int?[] { id }, ct); // Completado/Archivado los decide el servidor
         return NoContent();
     }
 

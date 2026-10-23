@@ -45,6 +45,23 @@ export function ProjectDetailPage() {
     });
   }
 
+  /** Pausa o reanuda el proyecto. Completado y Archivado los decide el servidor según sus tareas. */
+  async function togglePause() {
+    const current = project.data;
+    if (!current) return;
+    try {
+      await projectsApi.update(current.id, {
+        name: current.name,
+        description: current.description,
+        colorHex: current.colorHex,
+        status: current.status === "OnHold" ? "Active" : "OnHold",
+      });
+      project.reload();
+    } catch (err) {
+      alert("No se pudo cambiar el estado: " + (err instanceof Error ? err.message : String(err)));
+    }
+  }
+
   // Tras cualquier cambio se recargan tareas y proyecto (el progreso depende de las tareas).
   function reloadAll() {
     tasks.reload();
@@ -79,12 +96,19 @@ export function ProjectDetailPage() {
 
       {p && (
         <div className="project-head">
-          <div className="record-meta">
-            <span className="project-dot" style={{ background: p.colorHex }} />
-            <span className="tag">{projectStatusLabel[p.status] ?? p.status}</span>
-            <span>
-              {p.completedWorkItems}/{p.totalWorkItems} tareas completadas
-            </span>
+          <div className="project-head-row">
+            <div className="record-meta">
+              <span className="project-dot" style={{ background: p.colorHex }} />
+              <span className="tag">{projectStatusLabel[p.status] ?? p.status}</span>
+              <span>
+                {p.completedWorkItems}/{p.totalWorkItems} tareas completadas
+              </span>
+            </div>
+            {(p.status === "Active" || p.status === "OnHold") && (
+              <button className="btn-secondary" onClick={togglePause}>
+                {p.status === "OnHold" ? "Reanudar proyecto" : "Pausar proyecto"}
+              </button>
+            )}
           </div>
           {p.description && <p className="project-desc">{p.description}</p>}
           <div className="bar" style={{ marginTop: 8, maxWidth: 260 }}>

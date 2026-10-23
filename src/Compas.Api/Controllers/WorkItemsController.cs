@@ -1,6 +1,7 @@
 using Compas.Api.Data;
 using Compas.Api.Dtos;
 using Compas.Api.Models;
+using Compas.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,8 +12,13 @@ namespace Compas.Api.Controllers;
 public class WorkItemsController : ControllerBase
 {
     private readonly CompasDbContext _db;
+    private readonly ProjectStatusService _projectStatus;
 
-    public WorkItemsController(CompasDbContext db) => _db = db;
+    public WorkItemsController(CompasDbContext db, ProjectStatusService projectStatus)
+    {
+        _db = db;
+        _projectStatus = projectStatus;
+    }
 
     /// <summary>Lista todas las tareas. Usa ?status=Pending y/o ?projectId=3 para filtrar.</summary>
     [HttpGet]
@@ -82,6 +88,7 @@ public class WorkItemsController : ControllerBase
 
         _db.WorkItems.Add(item);
         await _db.SaveChangesAsync(ct);
+        await _projectStatus.SyncAsync(new[] { item.ProjectId }, ct);
         await _db.Entry(item).Reference(w => w.Project).LoadAsync(ct);
 
         return CreatedAtAction(nameof(GetById), new { id = item.Id }, ToDto(item));
@@ -99,6 +106,8 @@ public class WorkItemsController : ControllerBase
             return BadRequest($"Estado no válido: {dto.Status}");
         if (ValidateEstimate(dto.EstimatedHours, dto.EstimatedMinutes) is { } estimateError)
             return BadRequest(estimateError);
+
+        var previousProjectId = item.ProjectId;
 
         item.Title = dto.Title;
         item.Description = dto.Description;
@@ -120,6 +129,7 @@ public class WorkItemsController : ControllerBase
         }
 
         await _db.SaveChangesAsync(ct);
+        await _projectStatus.SyncAsync(new[] { previousProjectId, item.ProjectId }, ct);
         return NoContent();
     }
 
@@ -132,6 +142,7 @@ public class WorkItemsController : ControllerBase
         // Las subtareas se borran en cascada con su tarea padre.
         _db.WorkItems.Remove(item);
         await _db.SaveChangesAsync(ct);
+        await _projectStatus.SyncAsync(new[] { item.ProjectId }, ct);
         return NoContent();
     }
 

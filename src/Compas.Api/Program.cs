@@ -35,6 +35,7 @@ builder.Services.AddDbContext<CompasDbContext>(options =>
 
 builder.Services.AddScoped<IPlanningEngine, HeuristicPlanningEngine>();
 builder.Services.AddScoped<PlannerService>();
+builder.Services.AddScoped<ProjectStatusService>();
 
 builder.Services.AddCors(options =>
 {
@@ -57,6 +58,17 @@ if (app.Environment.IsDevelopment() && !usePostgres)
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<CompasDbContext>();
     db.Database.Migrate();
+}
+
+// Al arrancar se alinea el estado de los proyectos con sus tareas (completados / archivados).
+try
+{
+    using var scope = app.Services.CreateScope();
+    await scope.ServiceProvider.GetRequiredService<ProjectStatusService>().SyncAllAsync();
+}
+catch (Exception ex)
+{
+    app.Logger.LogWarning(ex, "No se pudo sincronizar el estado de los proyectos al arrancar.");
 }
 
 app.UseSwagger();

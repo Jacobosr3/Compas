@@ -8,7 +8,8 @@ import { projectsApi } from "../api";
 import type { ProjectDto, ProjectStatus } from "../api/types";
 import { projectStatusLabel } from "../utils/format";
 
-const STATUS_OPTIONS: ProjectStatus[] = ["Active", "OnHold", "Completed", "Archived"];
+// Completado y Archivado los decide el servidor según las tareas del proyecto.
+const STATUS_OPTIONS: ProjectStatus[] = ["Active", "OnHold"];
 
 interface FormState {
   name: string;
@@ -193,7 +194,17 @@ function ProjectModal({
           <input type="color" value={form.colorHex} onChange={(e) => setForm({ ...form, colorHex: e.target.value })} />
         </div>
 
-        {!isNew && (
+        {!isNew && (form.status === "Completed" || form.status === "Archived") && (
+          <div className="field">
+            <label>Estado</label>
+            <div className="confirm-message" style={{ margin: 0 }}>
+              {projectStatusLabel[form.status]}. Se gestiona solo: un proyecto se completa cuando todas sus tareas
+              lo están, y se archiva si no tiene ninguna. Al añadir o reabrir una tarea vuelve a estar activo.
+            </div>
+          </div>
+        )}
+
+        {!isNew && form.status !== "Completed" && form.status !== "Archived" && (
           <div className="field">
             <label>Estado</label>
             <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ProjectStatus })}>

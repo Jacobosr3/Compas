@@ -448,6 +448,20 @@
 .project-head {
   margin-bottom: 20px;
 }
+.project-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.project-head-row .btn-secondary {
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+.project-head-row .btn-secondary:hover {
+  background: var(--color-canvas);
+}
 .project-dot {
   width: 10px;
   height: 10px;
@@ -1023,6 +1037,15 @@
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+}
+.tl-complete {
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.tl-name.done {
+  color: var(--muted);
+  text-decoration: line-through;
 }
 .tl-move {
   display: flex;
