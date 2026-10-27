@@ -6,7 +6,8 @@ public record CalendarEventDto(
     DateTime StartTime,
     DateTime EndTime,
     bool IsAllDay,
-    string? Notes);
+    string? Notes,
+    string Source);
 
 public record CreateCalendarEventDto(
     string Title,

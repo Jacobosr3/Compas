@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Topbar } from "../components/Topbar";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { ConnectionBanner } from "../components/ConnectionBanner";
+import { GoogleCalendarCard } from "../components/GoogleCalendarCard";
 import { useApiData } from "../hooks/useApiData";
 import { calendarEventsApi } from "../api";
 import type { CalendarEventDto } from "../api/types";
@@ -17,6 +18,8 @@ export function AgendaPage() {
     <main className="main">
       <Topbar title="Agenda" subtitle="Eventos fijos que el planificador siempre respeta" status={status} onRefresh={reload} />
       {status === "error" && <ConnectionBanner message={error || ""} />}
+
+      <GoogleCalendarCard onSynced={reload} />
 
       <div className="section-head">
         <h2>Eventos del día</h2>
@@ -54,21 +57,24 @@ export function AgendaPage() {
               <div className="record-main">
                 <div className="record-title">{evt.title}</div>
                 <div className="record-meta">
-                  <span className="tag">🔒 Fijo</span>
+                  <span className="tag">{evt.source === "Import" ? "Google Calendar" : "🔒 Fijo"}</span>
                   <span className="mono">
                     {evt.isAllDay ? "Todo el día" : `${fmtTime(evt.startTime)} — ${fmtTime(evt.endTime)}`}
                   </span>
                   {evt.notes && <span>{evt.notes}</span>}
                 </div>
               </div>
-              <div className="record-actions">
-                <button
-                  className="btn-danger"
-                  onClick={() => setEventToDelete(evt)}
-                >
-                  Eliminar
-                </button>
-              </div>
+              {/* Los eventos de Google se gestionan en Google: se volverían a importar. */}
+              {evt.source !== "Import" && (
+                <div className="record-actions">
+                  <button
+                    className="btn-danger"
+                    onClick={() => setEventToDelete(evt)}
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              )}
             </div>
           ))}
       </div>

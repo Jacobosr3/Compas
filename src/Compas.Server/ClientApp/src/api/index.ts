@@ -11,6 +11,7 @@ import type {
   DailyPlanDto,
   WorkItemStatus,
   SubtaskDto,
+  GoogleStatusDto,
 } from "./types";
 
 export const projectsApi = {
@@ -49,6 +50,16 @@ export const calendarEventsApi = {
   get: (id: number) => api.get<CalendarEventDto>(`/api/calendarevents/${id}`),
   create: (dto: CreateCalendarEventDto) => api.post<CalendarEventDto>("/api/calendarevents", dto),
   remove: (id: number) => api.delete<void>(`/api/calendarevents/${id}`),
+};
+
+export const googleApi = {
+  status: () => api.get<GoogleStatusDto>("/api/google/status"),
+  /** Devuelve la dirección de Google a la que enviar al usuario para elegir cuenta. */
+  connect: (returnUrl: string) => api.post<{ url: string }>("/api/google/connect", { returnUrl }),
+  refreshCalendars: () => api.post<GoogleStatusDto>("/api/google/calendars/refresh"),
+  saveSelection: (calendarIds: string[]) => api.put<GoogleStatusDto>("/api/google/calendars", { calendarIds }),
+  sync: () => api.post<GoogleStatusDto>("/api/google/sync"),
+  disconnect: () => api.delete<GoogleStatusDto>("/api/google"),
 };
 
 function plannerQuery(minutes?: number, projectIds?: number[]): string {

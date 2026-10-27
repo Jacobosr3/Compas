@@ -1,5 +1,6 @@
 using Compas.Api.Data;
 using Compas.Api.Services;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,6 +37,13 @@ builder.Services.AddDbContext<CompasDbContext>(options =>
 builder.Services.AddScoped<IPlanningEngine, HeuristicPlanningEngine>();
 builder.Services.AddScoped<PlannerService>();
 builder.Services.AddScoped<ProjectStatusService>();
+
+// Integración con Google Calendar (credenciales en user-secrets: Google:ClientId / Google:ClientSecret).
+builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection("Google"));
+builder.Services.AddMemoryCache();
+builder.Services.AddDataProtection().SetApplicationName("Compas");
+builder.Services.AddHttpClient("google", c => c.Timeout = TimeSpan.FromSeconds(20));
+builder.Services.AddScoped<GoogleCalendarService>();
 
 builder.Services.AddCors(options =>
 {

@@ -8,14 +8,26 @@ namespace Compas.Api.Controllers;
 [Route("api/[controller]")]
 public class PlannerController : ControllerBase
 {
-    private readonly PlannerService _planner;
+    // Si hay una cuenta de Google conectada, antes de planificar se refrescan sus eventos
+    // cuando la última sincronización tiene más de unos minutos.
+    private static readonly TimeSpan GoogleSyncMaxAge = TimeSpan.FromMinutes(2);
 
-    public PlannerController(PlannerService planner) => _planner = planner;
+    private readonly PlannerService _planner;
+    private readonly GoogleCalendarService _google;
+
+    public PlannerController(PlannerService planner, GoogleCalendarService google)
+    {
+        _planner = planner;
+        _google = google;
+    }
 
     /// <summary>Plan de hoy (lo genera si aún no existe). Esto alimenta el panel "Ahora mismo" y la línea de tiempo.</summary>
     [HttpGet("today")]
     public async Task<ActionResult<DailyPlanDto>> GetToday(CancellationToken ct)
-        => await _planner.GetTodayAsync(ct);
+    {
+        await _google.TrySyncIfStaleAsync(TimeSpan.FromMinutes(10), ct);
+        return await _planner.GetTodayAsync(ct);
+    }
 
     /// <summary>Genera (o regenera) el plan completo de una fecha desde el inicio de la jornada.</summary>
     /// <param name="minutes">Tiempo máximo a dedicar a tareas (opcional; sin él se rellena todo el día).</param>
@@ -23,6 +35,8 @@ public class PlannerController : ControllerBase
     public async Task<ActionResult<DailyPlanDto>> Generate([FromQuery] DateOnly? date, [FromQuery] int? minutes, CancellationToken ct)
     {
         if (minutes is <= 0) return BadRequest("El tiempo a dedicar debe ser mayor que 0.");
+
+        await _google.TrySyncIfStaleAsync(GoogleSyncMaxAge, ct);
 
         var targetDate = date ?? DateOnly.FromDateTime(DateTime.Now);
         var dayStart = targetDate.ToDateTime(TimeOnly.MinValue);
@@ -38,6 +52,8 @@ public class PlannerController : ControllerBase
     public async Task<ActionResult<DailyPlanDto>> Replan([FromQuery] int? minutes, [FromQuery] int[]? projectIds, CancellationToken ct)
     {
         if (minutes is <= 0) return BadRequest("El tiempo a dedicar debe ser mayor que 0.");
+
+        await _google.TrySyncIfStaleAsync(GoogleSyncMaxAge, ct);
         return await _planner.ReplanFromNowAsync(minutes, projectIds, ct);
     }
 

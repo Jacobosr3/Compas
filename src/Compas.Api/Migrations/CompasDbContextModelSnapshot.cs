@@ -26,6 +26,14 @@ namespace Compas.Api.Migrations
                     b.Property<DateTime>("EndTime")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ExternalCalendarId")
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ExternalId")
+                        .HasMaxLength(1024)
+                        .HasColumnType("TEXT");
+
                     b.Property<bool>("IsAllDay")
                         .HasColumnType("INTEGER");
 
@@ -49,7 +57,72 @@ namespace Compas.Api.Migrations
 
                     b.HasIndex("StartTime");
 
+                    b.HasIndex("ExternalCalendarId", "ExternalId");
+
                     b.ToTable("CalendarEvents");
+                });
+
+            modelBuilder.Entity("Compas.Api.Models.GoogleAccount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("ConnectedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(320)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("LastSyncAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("LastSyncError")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("RefreshToken")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("GoogleAccounts");
+                });
+
+            modelBuilder.Entity("Compas.Api.Models.GoogleCalendarSelection", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("CalendarId")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ColorHex")
+                        .HasMaxLength(9)
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Selected")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Summary")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CalendarId")
+                        .IsUnique();
+
+                    b.ToTable("GoogleCalendarSelections");
                 });
 
             modelBuilder.Entity("Compas.Api.Models.PlanEntry", b =>

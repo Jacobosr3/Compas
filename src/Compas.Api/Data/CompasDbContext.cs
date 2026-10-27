@@ -14,6 +14,8 @@ public class CompasDbContext : DbContext
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
     public DbSet<PlanRun> PlanRuns => Set<PlanRun>();
     public DbSet<PlanEntry> PlanEntries => Set<PlanEntry>();
+    public DbSet<GoogleAccount> GoogleAccounts => Set<GoogleAccount>();
+    public DbSet<GoogleCalendarSelection> GoogleCalendarSelections => Set<GoogleCalendarSelection>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +51,23 @@ public class CompasDbContext : DbContext
             e.Property(c => c.Title).IsRequired().HasMaxLength(300);
             e.Property(c => c.Source).HasConversion<string>().HasMaxLength(20);
             e.HasIndex(c => c.StartTime);
+            e.Property(c => c.ExternalId).HasMaxLength(1024);
+            e.Property(c => c.ExternalCalendarId).HasMaxLength(400);
+            e.HasIndex(c => new { c.ExternalCalendarId, c.ExternalId });
+        });
+
+        modelBuilder.Entity<GoogleAccount>(e =>
+        {
+            e.Property(g => g.Email).IsRequired().HasMaxLength(320);
+            e.Property(g => g.RefreshToken).IsRequired();
+        });
+
+        modelBuilder.Entity<GoogleCalendarSelection>(e =>
+        {
+            e.Property(g => g.CalendarId).IsRequired().HasMaxLength(400);
+            e.Property(g => g.Summary).IsRequired().HasMaxLength(300);
+            e.Property(g => g.ColorHex).HasMaxLength(9);
+            e.HasIndex(g => g.CalendarId).IsUnique();
         });
 
         modelBuilder.Entity<PlanRun>(e =>

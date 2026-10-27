@@ -89,6 +89,26 @@ export interface CalendarEventDto {
   endTime: string;
   isAllDay: boolean;
   notes: string | null;
+  /** "Manual" o "Import" (traído de Google Calendar). */
+  source: string;
+}
+
+export interface GoogleCalendarDto {
+  id: string;
+  summary: string;
+  colorHex: string | null;
+  isPrimary: boolean;
+  selected: boolean;
+}
+
+export interface GoogleStatusDto {
+  /** Hay credenciales de Google configuradas en la API. */
+  configured: boolean;
+  connected: boolean;
+  email: string | null;
+  lastSyncAt: string | null;
+  lastSyncError: string | null;
+  calendars: GoogleCalendarDto[];
 }
 
 export interface CreateCalendarEventDto {

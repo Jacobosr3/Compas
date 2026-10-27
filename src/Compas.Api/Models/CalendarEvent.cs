@@ -13,4 +13,10 @@ public class CalendarEvent
     public bool IsAllDay { get; set; }
     public EventSource Source { get; set; } = EventSource.Manual;
     public string? Notes { get; set; }
+
+    /// <summary>Id del evento en el servicio de origen (Google); null en eventos manuales.</summary>
+    public string? ExternalId { get; set; }
+
+    /// <summary>Id del calendario de origen (Google); null en eventos manuales.</summary>
+    public string? ExternalCalendarId { get; set; }
 }

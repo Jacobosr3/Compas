@@ -72,5 +72,5 @@ public class CalendarEventsController : ControllerBase
     }
 
     private static CalendarEventDto ToDto(CalendarEvent e) =>
-        new(e.Id, e.Title, e.StartTime, e.EndTime, e.IsAllDay, e.Notes);
+        new(e.Id, e.Title, e.StartTime, e.EndTime, e.IsAllDay, e.Notes, e.Source.ToString());
 }

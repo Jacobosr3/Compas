@@ -159,3 +159,26 @@ Qué hace el frontend con datos reales:
 - Persistir preferencias de jornada (horario laboral, duración de descansos) por usuario en vez de en `appsettings.json`.
 - Sustituir `HeuristicPlanningEngine` por un motor que llame a un LLM, manteniendo la misma interfaz.
 - Sincronización real de calendario (Google Calendar / Outlook) como nuevo `EventSource`.
+
+
+## Google Calendar
+
+La pantalla **Agenda** tiene un panel "Google Calendar", desactivado por defecto. El botón **Google Calendar**
+lleva a Google para elegir la cuenta; después se eligen los calendarios que se incluyen. Sus eventos se importan
+como eventos fijos (solo lectura) y el planificador los respeta; se refrescan al planificar si la última
+sincronización tiene más de 2 minutos. Los tokens se guardan cifrados (ASP.NET Data Protection).
+
+Configuración (una sola vez, necesita credenciales propias de Google):
+
+1. En [Google Cloud Console](https://console.cloud.google.com) crea un proyecto y activa la **Google Calendar API**.
+2. En *Pantalla de consentimiento* elige «Externo» y añade tu cuenta como usuario de prueba.
+3. En *Credenciales* crea un **ID de cliente OAuth** tipo «Aplicación web» con el URI de redireccionamiento
+   `http://localhost:5080/api/google/callback`.
+4. Guarda las credenciales como secretos de usuario (PowerShell, desde la raíz del repositorio) y reinicia la API:
+
+```powershell
+dotnet user-secrets set "Google:ClientId" "TU_ID" --project src/Compas.Api
+dotnet user-secrets set "Google:ClientSecret" "TU_SECRETO" --project src/Compas.Api
+```
+
+En Postgres/Supabase hay que aplicar antes `scripts/add_google_calendar_postgres.sql`.
