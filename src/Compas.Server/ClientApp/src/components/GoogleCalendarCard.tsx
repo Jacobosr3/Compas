@@ -3,15 +3,7 @@ import { ApiError } from "../api/client";
 import { googleApi } from "../api";
 import { ConfirmModal } from "./ConfirmModal";
 import { useApiData } from "../hooks/useApiData";
-
-/** Mensaje limpio de un error de la API (quita el "409 Conflict — " del principio). */
-function errorText(err: unknown): string {
-  if (err instanceof ApiError) {
-    const i = err.message.indexOf(" — ");
-    return i >= 0 ? err.message.slice(i + 3) : err.message;
-  }
-  return err instanceof Error ? err.message : String(err);
-}
+import { errorText } from "../utils/errors";
 
 function fmtAgo(iso: string): string {
   const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
@@ -178,6 +170,16 @@ export function GoogleCalendarCard({ onSynced }: { onSynced: () => void }) {
 
       {notice && <div className={"google-notice " + notice.kind}>{notice.text}</div>}
 
+      {connected && status && !status.canWrite && (
+        <div className="google-notice">
+          Compás solo puede <b>leer</b> tu calendario. Para crear y editar eventos en Google desde Compás hace falta un permiso más.{" "}
+          <button className="link-btn" onClick={connect} disabled={busy !== null}>
+            Dar permiso de escritura
+          </button>
+        </div>
+      )}
+
+
       {connected && status && (
         <>
           <div className="google-list-head">
@@ -259,7 +261,7 @@ export function GoogleCalendarCard({ onSynced }: { onSynced: () => void }) {
       {confirmDisconnect && (
         <ConfirmModal
           title="Desconectar Google Calendar"
-          message="Se revocará el permiso y se quitarán de Compás los eventos importados de Google. Tus eventos manuales no se tocan."
+          message="Se revocará el permiso y se quitarán de Compás los eventos importados de Google. Los eventos que ya están en Google no se borran allí, y los que creaste en Compás se conservan."
           confirmLabel="Desconectar"
           onConfirm={async () => {
             await googleApi.disconnect();

@@ -91,6 +91,14 @@ export interface CalendarEventDto {
   notes: string | null;
   /** "Manual" o "Import" (traído de Google Calendar). */
   source: string;
+  /** El evento está vinculado a Google Calendar: los cambios se guardan también allí. */
+  googleLinked: boolean;
+  /** Aviso al crear: el evento se guardó en Compás pero no se pudo crear en Google. */
+  syncWarning?: string | null;
+  /** Color (#rrggbb) del calendario de Google del evento; null si no está vinculado a Google. */
+  colorHex?: string | null;
+  /** Id del calendario de Google donde está el evento; null si solo existe en Compás. */
+  calendarId?: string | null;
 }
 
 export interface GoogleCalendarDto {
@@ -99,6 +107,8 @@ export interface GoogleCalendarDto {
   colorHex: string | null;
   isPrimary: boolean;
   selected: boolean;
+  /** Se pueden crear y editar eventos en este calendario. */
+  canEdit: boolean;
 }
 
 export interface GoogleStatusDto {
@@ -108,6 +118,10 @@ export interface GoogleStatusDto {
   email: string | null;
   lastSyncAt: string | null;
   lastSyncError: string | null;
+  /** La cuenta dio permiso para crear y editar eventos (no solo leerlos). */
+  canWrite: boolean;
+  /** Calendario donde se crean los eventos nuevos de Compás. */
+  defaultCalendarId: string | null;
   calendars: GoogleCalendarDto[];
 }
 
@@ -117,6 +131,8 @@ export interface CreateCalendarEventDto {
   endTime: string;
   isAllDay: boolean;
   notes?: string | null;
+  /** Calendario de Google donde crearlo: omitido = el de por defecto; "" = solo en Compás. */
+  calendarId?: string | null;
 }
 
 export interface PlanEntryDto {

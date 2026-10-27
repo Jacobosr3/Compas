@@ -68,7 +68,14 @@ namespace Compas.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<bool>("CanWrite")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("ConnectedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("DefaultCalendarId")
+                        .HasMaxLength(400)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Email")
@@ -101,6 +108,9 @@ namespace Compas.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(400)
                         .HasColumnType("TEXT");
+
+                    b.Property<bool>("CanEdit")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ColorHex")
                         .HasMaxLength(9)

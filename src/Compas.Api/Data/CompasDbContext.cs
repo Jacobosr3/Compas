@@ -60,6 +60,7 @@ public class CompasDbContext : DbContext
         {
             e.Property(g => g.Email).IsRequired().HasMaxLength(320);
             e.Property(g => g.RefreshToken).IsRequired();
+            e.Property(g => g.DefaultCalendarId).HasMaxLength(400);
         });
 
         modelBuilder.Entity<GoogleCalendarSelection>(e =>

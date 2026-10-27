@@ -16,7 +16,10 @@ public class GoogleOptions
     public string DefaultClientUrl { get; set; } = "http://localhost:5174";
 
     /// <summary>Días hacia delante cuyos eventos se importan.</summary>
-    public int SyncDays { get; set; } = 15;
+    public int SyncDays { get; set; } = 90;
+
+    /// <summary>Días hacia atrás (para ver semanas pasadas en la agenda).</summary>
+    public int SyncPastDays { get; set; } = 14;
 
     // Endpoints de Google; se pueden cambiar solo para pruebas con un servidor simulado.
     public string AuthUrl { get; set; } = "https://accounts.google.com/o/oauth2/v2/auth";

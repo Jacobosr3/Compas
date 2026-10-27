@@ -12,21 +12,21 @@ const items = [
     ),
   },
   {
-    to: "/proyectos",
-    label: "Proyectos",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M4 6h16M4 12h10M4 18h7" />
-      </svg>
-    ),
-  },
-  {
     to: "/agenda",
     label: "Agenda",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
         <rect x="3" y="5" width="18" height="16" rx="2" />
         <path d="M3 10h18M8 3v4M16 3v4" />
+      </svg>
+    ),
+  },
+  {
+    to: "/proyectos",
+    label: "Proyectos",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M4 6h16M4 12h10M4 18h7" />
       </svg>
     ),
   },

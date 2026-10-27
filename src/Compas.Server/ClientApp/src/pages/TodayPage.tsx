@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Topbar } from "../components/Topbar";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { ConfirmModal } from "../components/ConfirmModal";
@@ -7,7 +7,7 @@ import { useApiData } from "../hooks/useApiData";
 import { plannerApi, projectsApi, workItemsApi } from "../api";
 import type { PlanEntryDto, ProjectDto, WorkItemDto } from "../api/types";
 import { SubtasksModal, TaskModal } from "../components/TaskParts";
-import { fmtDateLong, fmtDuration, totalMinutes, fmtTime } from "../utils/format";
+import { fmtDateLong, fmtDuration, totalMinutes, fmtTime, mondayOf, toDateInputValue } from "../utils/format";
 
 const TIME_KEY = "compas.planTime";
 const PROJECTS_KEY = "compas.planProjects";
@@ -115,6 +115,9 @@ export function TodayPage() {
   const [quickTitle, setQuickTitle] = useState("");
   const [time, setTime] = useState(readSavedTime);
   const [savedProjectIds, setSavedProjectIds] = useState(readSavedProjects);
+  const navigate = useNavigate();
+  // Mes que muestra el mini calendario (0 = el actual).
+  const [monthOffset, setMonthOffset] = useState(0);
   const [replanning, setReplanning] = useState(false);
   const [clearing, setClearing] = useState(false);
   const [editingTask, setEditingTask] = useState<WorkItemDto | null>(null);
@@ -208,9 +211,32 @@ export function TodayPage() {
 
   const year = now.getFullYear();
   const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstDayOfWeek = (new Date(year, month, 1).getDay() + 6) % 7;
-  const monthName = now.toLocaleString("es-ES", { month: "long" });
+  const shown = new Date(year, month + monthOffset, 1);
+  const shownYear = shown.getFullYear();
+  const shownMonth = shown.getMonth();
+  const daysInMonth = new Date(shownYear, shownMonth + 1, 0).getDate();
+  const firstDayOfWeek = (shown.getDay() + 6) % 7;
+  const monthName = shown.toLocaleString("es-ES", { month: "long" });
+  // Semanas del mes: el lunes de cada fila (una fila = una semana, que se abre en la Agenda).
+  const weekRows = Array.from({ length: Math.ceil((firstDayOfWeek + daysInMonth) / 7) }, (_, w) => {
+    const monday = new Date(shownYear, shownMonth, w * 7 - firstDayOfWeek + 1);
+    const cells = Array.from({ length: 7 }, (_, d) => {
+      const day = w * 7 + d - firstDayOfWeek + 1;
+      return day >= 1 && day <= daysInMonth ? day : null;
+    });
+    return { monday, cells };
+  });
+  const thisMonday = mondayOf(now).getTime();
+
+  /** Abre la semana elegida en la Agenda a pantalla completa. */
+  function openWeek(monday: Date) {
+    // Se pide aquí, dentro del clic, porque el navegador solo concede la pantalla completa a un gesto del usuario.
+    document.documentElement.requestFullscreen?.().catch(() => {
+      /* si no la concede, la Agenda se abre igualmente ampliada dentro de la ventana */
+    });
+    // Al salir de la pantalla completa, la Agenda devuelve a esta pantalla.
+    navigate(`/agenda?vista=semana&semana=${toDateInputValue(monday)}&completa=1`, { state: { returnTo: "/" } });
+  }
 
   return (
     <main className="main main-wide">
@@ -323,16 +349,49 @@ export function TodayPage() {
           </div>
 
           <div className="card glass">
-            <h3 style={{ textTransform: "capitalize" }}>{monthName}</h3>
+            <div className="mini-cal-nav">
+              <button className="btn-ghost mini-cal-arrow" aria-label="Mes anterior" onClick={() => setMonthOffset((o) => o - 1)}>
+                ‹
+              </button>
+              <h3 style={{ textTransform: "capitalize" }}>
+                {monthName} {shownYear}
+              </h3>
+              <button className="btn-ghost mini-cal-arrow" aria-label="Mes siguiente" onClick={() => setMonthOffset((o) => o + 1)}>
+                ›
+              </button>
+            </div>
+            {monthOffset !== 0 && (
+              <button className="link-btn mini-cal-today" onClick={() => setMonthOffset(0)}>
+                Volver al mes actual
+              </button>
+            )}
             <div className="mini-cal">
-              {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
-                <span key={d} className="d" style={{ fontWeight: 600 }}>{d}</span>
-              ))}
-              {Array.from({ length: firstDayOfWeek }).map((_, i) => (
-                <span key={`pad-${i}`} className="d pad" />
-              ))}
-              {Array.from({ length: daysInMonth }).map((_, i) => (
-                <span key={i} className={"d" + (i + 1 === now.getDate() ? " today" : "")}>{i + 1}</span>
+              <div className="mini-cal-head">
+                {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
+                  <span key={d} className="d" style={{ fontWeight: 600 }}>{d}</span>
+                ))}
+              </div>
+              {weekRows.map(({ monday, cells }) => (
+                <button
+                  key={monday.getTime()}
+                  className={"mini-week" + (monday.getTime() === thisMonday ? " current" : "")}
+                  title="Abrir esta semana a pantalla completa"
+                  aria-label={`Abrir la semana del ${monday.toLocaleDateString("es-ES", { day: "numeric", month: "long" })} a pantalla completa`}
+                  onClick={() => openWeek(monday)}
+                >
+                  {cells.map((day, i) => (
+                    <span
+                      key={i}
+                      className={
+                        "d" +
+                        (day === null ? " pad" : "") +
+                        (day !== null && shownYear === year && shownMonth === month && day === now.getDate() ? " today" : "")
+                      }
+                    >
+                      {day ?? ""}
+                    </span>
+                  ))}
+                </button>
               ))}
             </div>
           </div>

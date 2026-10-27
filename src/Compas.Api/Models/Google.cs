@@ -15,6 +15,12 @@ public class GoogleAccount
     public DateTime ConnectedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastSyncAt { get; set; }
     public string? LastSyncError { get; set; }
+
+    /// <summary>La cuenta dio permiso para crear y editar eventos (no solo leerlos).</summary>
+    public bool CanWrite { get; set; }
+
+    /// <summary>Calendario donde se crean los eventos nuevos de Compás; null = el principal.</summary>
+    public string? DefaultCalendarId { get; set; }
 }
 
 /// <summary>Un calendario de la cuenta de Google y si el usuario quiere incluirlo en Compás.</summary>
@@ -26,4 +32,7 @@ public class GoogleCalendarSelection
     public string? ColorHex { get; set; }
     public bool IsPrimary { get; set; }
     public bool Selected { get; set; }
+
+    /// <summary>El usuario puede crear y editar eventos en este calendario (propietario o editor).</summary>
+    public bool CanEdit { get; set; }
 }

@@ -102,6 +102,32 @@ public class GoogleController : ControllerBase
         }
     }
 
+    /// <summary>Elige el calendario de Google donde se crean los eventos nuevos de Compás.</summary>
+    [HttpPut("target")]
+    public async Task<ActionResult<GoogleStatusDto>> SetTarget(GoogleTargetDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _google.SetDefaultCalendarAsync(dto.CalendarId, ct);
+            return await _google.GetStatusAsync(ct);
+        }
+        catch (GoogleException ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Refresco automático: sincroniza solo si la última sincronización tiene más de 30 segundos y nunca falla
+    /// (el error, si lo hay, queda en el estado). El cliente lo llama periódicamente para ver los cambios hechos en Google.
+    /// </summary>
+    [HttpPost("refresh")]
+    public async Task<GoogleStatusDto> Refresh(CancellationToken ct)
+    {
+        await _google.TrySyncIfStaleAsync(TimeSpan.FromSeconds(30), ct);
+        return await _google.GetStatusAsync(ct);
+    }
+
     /// <summary>Importa ahora los eventos de los calendarios incluidos.</summary>
     [HttpPost("sync")]
     public async Task<ActionResult<GoogleStatusDto>> Sync(CancellationToken ct)

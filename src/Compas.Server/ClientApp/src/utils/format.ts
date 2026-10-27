@@ -18,8 +18,17 @@ export function fmtDateLong(date: Date): string {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+/** Lunes (00:00, hora local) de la semana que contiene `date`. */
+export function mondayOf(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+
+/** Fecha local como yyyy-MM-dd (toISOString la daría en UTC y, de madrugada, el día anterior). */
 export function toDateInputValue(date: Date): string {
-  return date.toISOString().slice(0, 10);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 export function toDateTimeLocalValue(date: Date): string {

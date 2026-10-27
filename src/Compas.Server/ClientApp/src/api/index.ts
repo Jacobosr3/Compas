@@ -47,8 +47,11 @@ export const workItemsApi = {
 
 export const calendarEventsApi = {
   list: (date?: string) => api.get<CalendarEventDto[]>(`/api/calendarevents${date ? `?date=${date}` : ""}`),
+  /** Eventos de un rango de días (ambos incluidos), por ejemplo una semana. */
+  range: (from: string, to: string) => api.get<CalendarEventDto[]>(`/api/calendarevents?from=${from}&to=${to}`),
   get: (id: number) => api.get<CalendarEventDto>(`/api/calendarevents/${id}`),
   create: (dto: CreateCalendarEventDto) => api.post<CalendarEventDto>("/api/calendarevents", dto),
+  update: (id: number, dto: CreateCalendarEventDto) => api.put<CalendarEventDto>(`/api/calendarevents/${id}`, dto),
   remove: (id: number) => api.delete<void>(`/api/calendarevents/${id}`),
 };
 
@@ -59,6 +62,10 @@ export const googleApi = {
   refreshCalendars: () => api.post<GoogleStatusDto>("/api/google/calendars/refresh"),
   saveSelection: (calendarIds: string[]) => api.put<GoogleStatusDto>("/api/google/calendars", { calendarIds }),
   sync: () => api.post<GoogleStatusDto>("/api/google/sync"),
+  /** Sincroniza solo si hace falta (la API lo decide) y devuelve el estado; para el refresco automático. */
+  refresh: () => api.post<GoogleStatusDto>("/api/google/refresh"),
+  /** Calendario de Google donde se crean los eventos nuevos de Compás. */
+  setTarget: (calendarId: string) => api.put<GoogleStatusDto>("/api/google/target", { calendarId }),
   disconnect: () => api.delete<GoogleStatusDto>("/api/google"),
 };
 
