@@ -57,6 +57,17 @@ public class PlannerController : ControllerBase
         return await _planner.ReplanFromNowAsync(minutes, projectIds, ct);
     }
 
+    /// <summary>
+    /// Programa lo que queda de la semana (hasta el domingo) con el orden de vencimiento, prioridad y duración.
+    /// </summary>
+    /// <param name="projectIds">Solo se planifican tareas de estos proyectos (0 = tareas sin proyecto). Vacío = todos.</param>
+    [HttpPost("week")]
+    public async Task<ActionResult<DailyPlanDto>> PlanWeek([FromQuery] int[]? projectIds, CancellationToken ct)
+    {
+        await _google.TrySyncIfStaleAsync(GoogleSyncMaxAge, ct);
+        return await _planner.PlanWeekAsync(projectIds, ct);
+    }
+
     /// <summary>Vacía el plan de hoy y devuelve a la bandeja todas las tareas programadas.</summary>
     [HttpPost("clear")]
     public async Task<ActionResult<DailyPlanDto>> Clear(CancellationToken ct)

@@ -91,6 +91,8 @@ export const plannerApi = {
   replan: (minutes?: number, projectIds?: number[]) =>
     api.post<DailyPlanDto>(`/api/planner/replan${plannerQuery(minutes, projectIds)}`),
   clear: () => api.post<DailyPlanDto>("/api/planner/clear"),
+  // Programa lo que queda de la semana (hasta el domingo); `projectIds` como en replan.
+  week: (projectIds?: number[]) => api.post<DailyPlanDto>(`/api/planner/week${plannerQuery(undefined, projectIds)}`),
   reorder: (workItemIds: number[], minutes?: number, projectIds?: number[]) =>
     api.post<DailyPlanDto>(`/api/planner/reorder${plannerQuery(minutes, projectIds)}`, { workItemIds }),
 };

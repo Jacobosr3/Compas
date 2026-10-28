@@ -93,6 +93,14 @@ const PLANNER_INFO = (
           Crea el plan de hoy desde cero, empezando a las 08:00 y sin límite de tiempo para tareas: reparte
           todas las que caben hasta medianoche.
         </dd>
+        <dt>Plan semanal</dt>
+        <dd>
+          Reparte las tareas pendientes desde ahora hasta el domingo, día a día y sin límite de tiempo, con el
+          orden de vencimiento, prioridad y duración. Una tarea con fecha de vencimiento se coloca dos días
+          antes si hay hueco; si vence en menos de dos días, lo antes posible. Las tareas sin fecha rellenan
+          los huecos. Cada día empieza a las 08:00 y respeta los eventos de la agenda. Lo que no entre esta
+          semana (o venza más adelante) se queda pendiente. El resultado se ve día a día en «Tu semana».
+        </dd>
         <dt>Planificar desde ahora</dt>
         <dd>
           Pregunta cuánto tiempo quieres dedicar a tareas y reparte las pendientes desde la hora actual, sin
@@ -101,7 +109,7 @@ const PLANNER_INFO = (
         </dd>
       </dl>
       <p>
-        Cada vez que usas «Plan del día» o «Planificar desde ahora» se crea un plan nuevo, y lo que cambia de hueco respecto al
+        Cada vez que usas «Plan del día», «Plan semanal» o «Planificar desde ahora» se crea un plan nuevo, y lo que cambia de hueco respecto al
         anterior se marca como «Reordenado».
       </p>
     </section>
@@ -179,6 +187,13 @@ export function TodayPage() {
     changeTime({ hours: "", minutes: "" });
     changeProjects([]);
     runAction(() => plannerApi.generate(), reloadAll);
+  }
+
+  /** Programa lo que queda de la semana (hasta el domingo), sin límite de tiempo y con todos los proyectos. */
+  function planWeek() {
+    changeTime({ hours: "", minutes: "" });
+    changeProjects([]);
+    runAction(() => plannerApi.week(), reloadAll);
   }
 
   /** Marca como completada una tarea del plan. */
@@ -275,11 +290,12 @@ export function TodayPage() {
             pendingMinutes={(inbox.data ?? []).reduce((sum, t) => sum + totalMinutes(t), 0)}
             onGenerate={generatePlan}
             onReplan={() => setReplanning(true)}
+            onWeek={planWeek}
             onClear={() => setClearing(true)}
           />
 
           <div className="section-head">
-            <h2>Tu día</h2>
+            <h2>{planSpansDays(entries) >= 3 ? "Tu semana" : "Tu día"}</h2>
           </div>
           <Timeline
             entries={entries}
@@ -480,6 +496,7 @@ function NowCard({
   pendingMinutes,
   onGenerate,
   onReplan,
+  onWeek,
   onClear,
 }: {
   entries: PlanEntryDto[];
@@ -489,6 +506,7 @@ function NowCard({
   pendingMinutes: number;
   onGenerate: () => void;
   onReplan: () => void;
+  onWeek: () => void;
   onClear: () => void;
 }) {
   if (loading) {
@@ -510,7 +528,9 @@ function NowCard({
   const first = tasks.length > 0 ? new Date(Math.min(...tasks.map((e) => new Date(e.start).getTime()))) : null;
   const last = tasks.length > 0 ? new Date(Math.max(...tasks.map((e) => new Date(e.end).getTime()))) : null;
   const spills = first !== null && last !== null && first.toDateString() !== last.toDateString();
-  const range = first && last ? `${fmtTime(first.toISOString())} — ${fmtTime(last.toISOString())}${spills ? " (+1 día)" : ""}` : null;
+  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const extraDays = first && last ? Math.round((startOfDay(last) - startOfDay(first)) / 86400000) : 0;
+  const range = first && last ? `${fmtTime(first.toISOString())} — ${fmtTime(last.toISOString())}${spills ? ` (+${extraDays} ${extraDays === 1 ? "día" : "días"})` : ""}` : null;
 
   const total = pendingCount + plannedCount;
   const pct = total > 0 ? plannedCount / total : 0;
@@ -520,7 +540,7 @@ function NowCard({
   const planned = plannedCount > 0;
   const title = planned ? "Planificado" : pendingCount > 0 ? "Listo para planificar" : "Todo al día";
   const sub = planned
-    ? `${plural(plannedCount, "tarea", "tareas")} (${fmtDuration(plannedMinutes)}) entre las ${fmtTime(first!.toISOString())} y las ${fmtTime(last!.toISOString())}${spills ? ", continúa al día siguiente" : ""}.`
+    ? `${plural(plannedCount, "tarea", "tareas")} (${fmtDuration(plannedMinutes)}) entre las ${fmtTime(first!.toISOString())} y las ${fmtTime(last!.toISOString())}${spills ? (extraDays === 1 ? ", continúa al día siguiente" : `, continúa durante ${extraDays} días más`) : ""}.`
     : pendingCount > 0
       ? `Tienes ${plural(pendingCount, "tarea pendiente", "tareas pendientes")} (${fmtDuration(pendingMinutes)}).`
       : "No hay tareas pendientes. Añade alguna desde la bandeja o usa «Plan del día».";
@@ -558,7 +578,7 @@ function NowCard({
               </span>
             )}
           </div>
-          <PlanActions divider primaryGenerate={!planned} onGenerate={onGenerate} onReplan={onReplan} onClear={onClear} />
+          <PlanActions divider primaryGenerate={!planned} onGenerate={onGenerate} onReplan={onReplan} onWeek={onWeek} onClear={onClear} />
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
           <div style={{ position: "relative", width: 96, height: 96 }}>
@@ -601,18 +621,23 @@ function PlanActions({
   divider = false,
   onGenerate,
   onReplan,
+  onWeek,
   onClear,
 }: {
   primaryGenerate?: boolean;
   divider?: boolean;
   onGenerate: () => void;
   onReplan: () => void;
+  onWeek: () => void;
   onClear: () => void;
 }) {
   return (
     <div className={"plan-actions" + (divider ? " with-divider" : "")}>
       <button className={primaryGenerate ? "btn-primary" : "btn-secondary"} onClick={onGenerate}>
         Plan del día
+      </button>
+      <button className="btn-secondary" onClick={onWeek} title="Reparte las tareas pendientes hasta el domingo">
+        Plan semanal
       </button>
       <button className="btn-secondary" onClick={onReplan}>
         Planificar desde ahora
@@ -813,13 +838,24 @@ function TimeBudgetField({
   );
 }
 
-/** Etiqueta de un día del plan: "Mañana" o "Sábado 24 de octubre". */
-function planDayLabel(date: Date, today: Date): string {
+/** Días naturales que abarca el plan (del primer al último bloque, ambos incluidos). */
+function planSpansDays(entries: PlanEntryDto[]): number {
+  if (entries.length === 0) return 0;
+  const day = (iso: string) => {
+    const d = new Date(iso);
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  };
+  return Math.round((day(entries[entries.length - 1].start) - day(entries[0].start)) / 86400000) + 1;
+}
+
+/** Etiqueta de un día del plan: "Mañana" o "Sábado 24 de octubre" (y "Hoy · …" cuando el plan abarca varios días). */
+function planDayLabel(date: Date, today: Date, multiDay = false): string {
   const days = Math.round(
     (new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime() -
       new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime()) /
       86400000,
   );
+  if (days === 0 && multiDay) return `Hoy · ${fmtDateLong(date)}`;
   if (days === 1) return "Mañana";
   return fmtDateLong(date);
 }
@@ -868,6 +904,33 @@ function Timeline({
   const now = new Date();
   let dividerShown = false;
 
+  // Un plan de varios días (p. ej. "Plan semanal") se ve día a día, cada uno con su cabecera y su resumen,
+  // igual que se ve hoy; los días intermedios sin nada también aparecen.
+  const dayKey = (d: Date) => d.toDateString();
+  const multiDay = new Set(entries.map((e) => dayKey(new Date(e.start)))).size > 1;
+  const daySummary = new Map<string, { count: number; minutes: number }>();
+  for (const e of entries) {
+    if (e.kind !== "Task") continue;
+    const key = dayKey(new Date(e.start));
+    const cur = daySummary.get(key) ?? { count: 0, minutes: 0 };
+    cur.count += 1;
+    cur.minutes += Math.round((new Date(e.end).getTime() - new Date(e.start).getTime()) / 60000);
+    daySummary.set(key, cur);
+  }
+  const dayHeader = (date: Date) => {
+    const sum = daySummary.get(dayKey(date));
+    return (
+      <div className="tl-day" key={"day-" + dayKey(date)}>
+        {planDayLabel(date, now, multiDay)}
+        {multiDay && (
+          <span className="tl-day-sum">
+            {sum ? `${sum.count} ${sum.count === 1 ? "tarea" : "tareas"} · ${fmtDuration(sum.minutes)}` : "Sin tareas"}
+          </span>
+        )}
+      </div>
+    );
+  };
+
   // Solo las tareas se pueden mover; los eventos fijos de la agenda no.
   const taskIds = entries.filter((e) => e.kind === "Task" && e.workItemId != null).map((e) => e.workItemId!);
   const canReorder = taskIds.length > 1;
@@ -886,7 +949,15 @@ function Timeline({
         const isCurrent = start <= now && now < end;
         // El plan puede seguir en días posteriores: se separa con el nombre del día.
         const previousDay = (index === 0 ? now : new Date(entries[index - 1].start)).toDateString();
-        const showDay = start.toDateString() !== previousDay;
+        const showDay = multiDay ? index === 0 || start.toDateString() !== previousDay : start.toDateString() !== previousDay;
+        // Días intermedios sin ninguna entrada (solo con plan de varios días).
+        const emptyDays: Date[] = [];
+        if (multiDay && index > 0) {
+          const prev = new Date(entries[index - 1].start);
+          for (let d = new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 1); d < new Date(start.getFullYear(), start.getMonth(), start.getDate()); d.setDate(d.getDate() + 1)) {
+            emptyDays.push(new Date(d));
+          }
+        }
         const showDivider = !dividerShown && start > now;
         if (showDivider) dividerShown = true;
 
@@ -913,7 +984,8 @@ function Timeline({
               </div>
             )}
 
-            {showDay && <div className="tl-day">{planDayLabel(start, now)}</div>}
+            {emptyDays.map(dayHeader)}
+            {showDay && dayHeader(start)}
 
             {entry.kind === "Free" ? (
               <div className="tl-item">

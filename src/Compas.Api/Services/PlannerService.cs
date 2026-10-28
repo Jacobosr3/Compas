@@ -52,6 +52,8 @@ public class PlannerService
         bool spillToNextDays = false,
         bool exactStart = false,
         IReadOnlyList<int>? projectIds = null,
+        int? spillDays = null,
+        int? dueLeadDays = null,
         CancellationToken ct = default)
     {
         var previousRun = await _db.PlanRuns
@@ -61,7 +63,8 @@ public class PlannerService
             .FirstOrDefaultAsync(ct);
 
         var dayStart = date.ToDateTime(TimeOnly.MinValue);
-        var maxDays = spillToNextDays ? MaxSpillDays : 1;
+        // spillDays limita cuántos días (contando el primero) puede abarcar el plan; por defecto, MaxSpillDays.
+        var maxDays = spillToNextDays ? Math.Clamp(spillDays ?? MaxSpillDays, 1, MaxSpillDays) : 1;
         var horizonEnd = dayStart.AddDays(maxDays);
 
         var fixedEvents = await _db.CalendarEvents
@@ -87,7 +90,15 @@ public class PlannerService
 
         for (var i = 0; i < maxDays; i++)
         {
-            var dayBlocks = _engine.BuildPlan(planDay, fixedEvents, remaining, planStart, budgetLeft, preferredOrder,
+            // Con dueLeadDays, una tarea con vencimiento no se coloca antes de (vencimiento − dueLeadDays); si ese
+            // día ya ha llegado o pasado (vence en menos de dueLeadDays), es candidata desde hoy. Las que no tienen
+            // fecha pueden ir en cualquier día.
+            var day = planDay;
+            var candidates = dueLeadDays is null
+                ? remaining
+                : remaining.Where(t => t.DueDate is null || DateOnly.FromDateTime(t.DueDate.Value).AddDays(-dueLeadDays.Value) <= day).ToList();
+
+            var dayBlocks = _engine.BuildPlan(planDay, fixedEvents, candidates, planStart, budgetLeft, preferredOrder,
                 exactStart: exactStart && i == 0); // los días siguientes empiezan al inicio de la jornada
             engineBlocks.AddRange(dayBlocks);
 
@@ -98,7 +109,8 @@ public class PlannerService
 
             // Hoy puede no caber nada porque queda poco día; pero si un día entero no coloca
             // ninguna tarea (son más largas que la jornada), tampoco cabrán en los siguientes.
-            if (placed.Count == 0 && i > 0) break;
+            // (Con dueLeadDays un día puede quedar vacío porque aún no toca ninguna tarea, y los siguientes sí.)
+            if (placed.Count == 0 && i > 0 && dueLeadDays is null) break;
 
             remaining.RemoveAll(placed.Contains);
             if (budgetLeft is not null)
@@ -188,6 +200,26 @@ public class PlannerService
     }
 
     /// <summary>
+    /// Programa lo que queda de la semana (de lunes a domingo): reparte las tareas pendientes desde ahora
+    /// hasta el domingo, día a día y sin tiempo máximo, con el orden habitual (vencimiento, prioridad y
+    /// duración) y respetando los eventos fijos. Una tarea con vencimiento se coloca dos días antes (si hay
+    /// hueco ese día o los siguientes) y, si vence en menos de dos días, lo antes posible. Lo que no cabe
+    /// esta semana vuelve a Pendiente.
+    /// </summary>
+    public Task<DailyPlanDto> PlanWeekAsync(IReadOnlyList<int>? projectIds = null, CancellationToken ct = default)
+    {
+        var now = DateTime.Now;
+        var today = DateOnly.FromDateTime(now);
+        return GenerateAsync(today, now, null, null, spillToNextDays: true, exactStart: true, projectIds: projectIds, spillDays: DaysLeftInWeek(today), dueLeadDays: WeekDueLeadDays, ct: ct);
+    }
+
+    /// <summary>Con cuántos días de antelación al vencimiento se programa una tarea en "Plan semanal".</summary>
+    private const int WeekDueLeadDays = 2;
+
+    /// <summary>Días que quedan de la semana (lunes a domingo) contando el de la fecha dada: lunes = 7 … domingo = 1.</summary>
+    private static int DaysLeftInWeek(DateOnly date) => 7 - ((int)date.DayOfWeek + 6) % 7;
+
+    /// <summary>
     /// Aplica el orden que el usuario ha elegido a mano: vuelve a colocar las tareas del plan
     /// de hoy, empezando donde empieza el plan que se está viendo y respetando los eventos
     /// fijos, con esas tareas primero y en ese orden. (Planificar desde "ahora" movería
@@ -212,7 +244,11 @@ public class PlannerService
             .FirstOrDefaultAsync(ct);
         var spill = lastStart is not null && DateOnly.FromDateTime(lastStart.Value) > today;
 
-        return await GenerateAsync(today, firstStart ?? now, budgetMinutes, workItemIds, spillToNextDays: spill, exactStart: true, projectIds: projectIds, ct: ct);
+        // Un plan que no sale de esta semana (p. ej. "Plan semanal") se reordena sin pasar del domingo.
+        var daysLeftInWeek = DaysLeftInWeek(today);
+        int? spillDays = spill && DateOnly.FromDateTime(lastStart!.Value) < today.AddDays(daysLeftInWeek) ? daysLeftInWeek : null;
+
+        return await GenerateAsync(today, firstStart ?? now, budgetMinutes, workItemIds, spillToNextDays: spill, exactStart: true, projectIds: projectIds, spillDays: spillDays, ct: ct);
     }
 
     /// <summary>
