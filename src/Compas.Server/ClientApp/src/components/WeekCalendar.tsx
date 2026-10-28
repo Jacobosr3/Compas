@@ -138,9 +138,11 @@ export function WeekCalendar({
     const scroller = scrollRef.current;
     if (!scroller) return;
     scroller.scrollTop = FIRST_VISIBLE_HOUR * HOUR_PX - 8;
-    // Si las columnas no caben (móvil), se abre en el día de hoy; si caben, no hay scroll horizontal y esto no hace nada.
-    const todayCol = colRefs.current[days.findIndex((d) => d.getTime() === startOfDay(new Date()).getTime())];
-    scroller.scrollLeft = todayCol ? todayCol.offsetLeft - (colRefs.current[0]?.offsetLeft ?? 0) : 0;
+    // En móvil a pantalla completa la semana se parte en lunes–jueves y viernes–domingo: se abre en la mitad de hoy.
+    // En el resto de casos no hay scroll horizontal y esto no hace nada.
+    const half = days.findIndex((d) => d.getTime() === startOfDay(new Date()).getTime()) >= 4 ? 4 : 0;
+    const firstCol = scroller.closest(".expanded") && window.matchMedia(PHONE_QUERY).matches ? colRefs.current[half] : null;
+    scroller.scrollLeft = firstCol ? firstCol.offsetLeft - (colRefs.current[0]?.offsetLeft ?? 0) : 0;
   }, [weekStart, days]);
 
   const allDay = events.filter((e) => e.isAllDay);

@@ -2229,10 +2229,26 @@
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
   }
+  /* de lunes a jueves en una pantalla y de viernes a domingo en la otra: 4 columnas por pantalla, se pasa deslizando */
+  .week-panel.expanded .weekcal {
+    container-type: inline-size;
+  }
+  .week-panel.expanded .weekcal-scroll {
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 40px;
+  }
+  .week-panel.expanded .weekcal.dragging .weekcal-scroll {
+    scroll-snap-type: none;
+  }
   .week-panel.expanded .weekcal-row,
   .week-panel.expanded .weekcal-body {
-    grid-template-columns: 40px repeat(7, minmax(64px, 1fr));
-    min-width: 488px;
+    /* 7 días + una columna vacía al final para que viernes–domingo también arranquen en el borde izquierdo */
+    grid-template-columns: 40px repeat(8, calc((100cqw - 40px) / 4));
+    min-width: calc(40px + 2 * (100cqw - 40px));
+  }
+  .week-panel.expanded .weekcal-body > .weekcal-col:nth-child(2),
+  .week-panel.expanded .weekcal-body > .weekcal-col:nth-child(6) {
+    scroll-snap-align: start;
   }
   .week-panel.expanded .weekcal-gutter {
     position: sticky;
