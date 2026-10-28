@@ -34,8 +34,8 @@ Compas/
 ### El motor de planificación
 
 `IPlanningEngine` es el punto de extensión pensado para que la IA sea el núcleo real
-del producto: hoy lo implementa `HeuristicPlanningEngine` (puntuación transparente por
-urgencia + prioridad + encaje del hueco disponible), pero se puede sustituir por una
+del producto: hoy lo implementa `HeuristicPlanningEngine` (orden transparente:
+fecha de vencimiento, después prioridad y después menor duración), pero se puede sustituir por una
 implementación que llame a un LLM sin tocar controladores ni el resto del sistema —
 solo hace falta registrar otra clase en `Program.cs`:
 

@@ -47,9 +47,31 @@ const PLANNER_INFO = (
       <h3>Cómo se organiza el día</h3>
       <p>
         El planificador reparte tus tareas pendientes y programadas entre los huecos libres del día, desde
-        las 08:00 y sin hora de fin (hasta medianoche). Los eventos de la agenda son fijos y nunca se mueven. En cada hueco elige la tarea
-        que mejor puntúa: urgencia de la fecha de vencimiento (40 %), prioridad (35 %) y lo bien que encaja
-        en el hueco (25 %). Tras 90 min seguidos de tareas añade un descanso de 15 min.
+        las 08:00 y sin hora de fin (hasta medianoche). Los eventos de la agenda son fijos y nunca se mueven. Tras 90 min seguidos de tareas añade un
+        descanso de 15 min.
+      </p>
+    </section>
+
+    <section className="info-section">
+      <h3>En qué orden elige las tareas</h3>
+      <p>En cada hueco coloca la primera tarea de esta lista que quepa, aplicando los criterios por orden:</p>
+      <ol>
+        <li>
+          <b>Fecha de vencimiento.</b> Antes la que vence antes: primero las vencidas, luego hoy, mañana y
+          así. Se compara el día, no la hora. Las tareas sin fecha van al final.
+        </li>
+        <li>
+          <b>Prioridad.</b> Con el mismo día de vencimiento: urgente, alta, media y baja, en ese orden.
+        </li>
+        <li>
+          <b>Duración.</b> Con el mismo día y la misma prioridad, la tarea más corta primero.
+        </li>
+      </ol>
+      <p>
+        Por ejemplo, una tarea de prioridad baja que vence hoy se coloca antes que una urgente que vence
+        mañana. Si la tarea que toca no cabe en el hueco (antes de un evento o dentro del tiempo que has
+        indicado), se coloca la siguiente de la lista que sí quepa. El motivo de cada elección aparece en el
+        plan. Si cambias el orden a mano, tu orden manda sobre estas reglas.
       </p>
     </section>
 

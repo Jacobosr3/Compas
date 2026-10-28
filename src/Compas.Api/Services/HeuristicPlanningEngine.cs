@@ -4,9 +4,10 @@ using Microsoft.Extensions.Options;
 namespace Compas.Api.Services;
 
 /// <summary>
-/// Motor de planificación basado en una puntuación transparente (urgencia + prioridad +
-/// encaje del hueco), no en un modelo de IA. Sirve como implementación de referencia y
-/// como línea base para comparar contra un futuro motor basado en LLM.
+/// Motor de planificación basado en un orden transparente y fijo, no en un modelo de IA:
+/// primero la fecha de vencimiento (la más cercana antes; sin fecha, al final), después la
+/// prioridad y, a igualdad, la tarea de menor duración. Sirve como implementación de
+/// referencia y como línea base para comparar contra un futuro motor basado en LLM.
 /// </summary>
 public class HeuristicPlanningEngine : IPlanningEngine
 {
@@ -35,7 +36,7 @@ public class HeuristicPlanningEngine : IPlanningEngine
         var blocks = new List<EngineBlock>();
         var remainingTasks = pendingItems
             .Where(t => t.EstimatedMinutes > 0)
-            .OrderBy(t => t.Id) // orden estable; la puntuación decide la prioridad real
+            .OrderBy(t => t.Id) // orden estable; PickBestTask decide la prioridad real
             .ToList();
 
         var orderedEvents = fixedEvents
@@ -138,8 +139,10 @@ public class HeuristicPlanningEngine : IPlanningEngine
     }
 
     /// <summary>
-    /// Puntúa las tareas candidatas y devuelve la de mayor puntuación que quepa en el
-    /// tiempo disponible, junto con la explicación en lenguaje natural de por qué se eligió.
+    /// Elige la tarea que quepa en el tiempo disponible según este orden: 1) fecha de vencimiento
+    /// (por día; las vencidas y las más próximas primero, las que no tienen fecha al final),
+    /// 2) prioridad (urgente antes que baja) y 3) duración estimada (la más corta primero).
+    /// Devuelve también la explicación en lenguaje natural de por qué se eligió.
     /// </summary>
     private (WorkItem Task, string Reason)? PickBestTask(
         List<WorkItem> candidates,
@@ -162,54 +165,36 @@ public class HeuristicPlanningEngine : IPlanningEngine
             }
         }
 
-        WorkItem? best = null;
-        double bestScore = double.MinValue;
-        string bestReason = string.Empty;
+        var best = candidates
+            .Where(t => t.EstimatedMinutes <= limit)
+            .OrderBy(t => t.DueDate?.Date ?? DateTime.MaxValue)
+            .ThenByDescending(t => PriorityRank(t.Priority))
+            .ThenBy(t => t.EstimatedMinutes)
+            .ThenBy(t => t.Id)
+            .FirstOrDefault();
 
-        foreach (var task in candidates)
-        {
-            if (task.EstimatedMinutes > limit) continue;
-
-            var urgencyScore = ScoreUrgency(task.DueDate, now, out var dueLabel);
-            var priorityScore = ScorePriority(task.Priority);
-            var fitScore = 100.0 * task.EstimatedMinutes / availableMinutes;
-
-            var total = urgencyScore * 0.40 + priorityScore * 0.35 + fitScore * 0.25;
-
-            if (total > bestScore)
-            {
-                bestScore = total;
-                best = task;
-                bestReason = BuildReason(task, availableMinutes, dueLabel, gapEndsAtEvent);
-            }
-        }
-
-        return best is null ? null : (best, bestReason);
+        return best is null ? null : (best, BuildReason(best, availableMinutes, DueLabel(best.DueDate, now), gapEndsAtEvent));
     }
 
-    private static double ScoreUrgency(DateTime? dueDate, DateTime now, out string? dueLabel)
+    private static string? DueLabel(DateTime? dueDate, DateTime now)
     {
-        dueLabel = null;
-        if (dueDate is null) return 20;
+        if (dueDate is null) return null;
 
-        var hoursLeft = (dueDate.Value - now).TotalHours;
-
-        if (hoursLeft <= 0) { dueLabel = "está vencida"; return 100; }
-        if (hoursLeft <= 24) { dueLabel = "vence hoy"; return 90; }
-        if (hoursLeft <= 48) { dueLabel = "vence mañana"; return 60; }
-        if (hoursLeft <= 24 * 7) { dueLabel = "vence esta semana"; return 35; }
-
-        dueLabel = "no es urgente todavía";
-        return 10;
+        var days = (dueDate.Value.Date - now.Date).Days;
+        if (days < 0) return "está vencida";
+        if (days == 0) return "vence hoy";
+        if (days == 1) return "vence mañana";
+        if (days <= 7) return "vence esta semana";
+        return "no es urgente todavía";
     }
 
-    private static double ScorePriority(Priority priority) => priority switch
+    private static int PriorityRank(Priority priority) => priority switch
     {
-        Priority.Urgent => 100,
-        Priority.High => 70,
-        Priority.Medium => 40,
-        Priority.Low => 15,
-        _ => 40
+        Priority.Urgent => 4,
+        Priority.High => 3,
+        Priority.Medium => 2,
+        Priority.Low => 1,
+        _ => 2
     };
 
     /// <summary>
@@ -233,6 +218,8 @@ public class HeuristicPlanningEngine : IPlanningEngine
             Priority.Low => "prioridad baja",
             _ => "prioridad media"
         });
+
+        parts.Add($"{task.EstimatedMinutes} min");
 
         if (gapEndsAtEvent)
             parts.Add($"cabe antes de tu próximo evento ({availableMinutes} min libres)");

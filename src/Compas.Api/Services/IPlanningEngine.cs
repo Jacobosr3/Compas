@@ -17,8 +17,8 @@ public record EngineBlock(
 /// Contrato del motor que decide qué hacer en cada momento del día.
 ///
 /// Esta interfaz es el punto donde vive "la IA" del producto. La implementación
-/// por defecto (<see cref="HeuristicPlanningEngine"/>) usa una fórmula de puntuación
-/// simple y transparente. Puede sustituirse por una implementación que llame a un
+/// por defecto (<see cref="HeuristicPlanningEngine"/>) usa un orden fijo y
+/// transparente (vencimiento, prioridad y duración). Puede sustituirse por una implementación que llame a un
 /// modelo de lenguaje (o a un servicio de ML propio) sin cambiar nada en los
 /// controladores ni en <see cref="PlannerService"/>: solo hay que registrar otra
 /// clase que implemente IPlanningEngine en Program.cs.
@@ -42,7 +42,7 @@ public interface IPlanningEngine
     /// </param>
     /// <param name="preferredOrder">
     /// Ids de tarea en el orden que el usuario ha elegido a mano. Se colocan antes que el
-    /// resto (por ese orden) siempre que quepan; lo que no esté en la lista sigue la puntuación.
+    /// resto (por ese orden) siempre que quepan; lo que no esté en la lista sigue el orden por vencimiento, prioridad y duración.
     /// </param>
     /// <param name="exactStart">
     /// Si es true se empieza exactamente en <paramref name="effectiveStart"/> (planificar "desde

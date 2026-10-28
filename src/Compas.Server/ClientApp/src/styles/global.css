@@ -1041,6 +1041,20 @@
   font-size: 13px;
   line-height: 1.5;
 }
+.info-section ol {
+  margin: 0 0 8px;
+  padding-left: 20px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.info-section li {
+  margin-bottom: 4px;
+}
+.info-section li b {
+  color: var(--text);
+  font-weight: 500;
+}
 .info-section dt {
   font-size: 13px;
   font-weight: 500;
@@ -2039,12 +2053,51 @@
   background: var(--color-ink);
 }
 @media (max-width: 720px) {
+  /* semana dentro de la página: los 7 días caben en el ancho de la pantalla, sin scroll horizontal */
   .weekcal {
-    overflow-x: auto;
+    overflow: hidden;
   }
-  .weekcal-row,
-  .weekcal-body {
-    min-width: 640px;
+  .weekcal-row {
+    grid-template-columns: 34px repeat(7, minmax(0, 1fr));
+  }
+  .weekcal-gutter {
+    padding-right: 4px;
+    font-size: 10px;
+  }
+  .weekcal-hours span {
+    right: 4px;
+  }
+  .weekcal-dayhead {
+    padding: 6px 0;
+    font-size: 10px;
+  }
+  .weekcal-dayhead b {
+    width: 26px;
+    height: 26px;
+    font-size: 14px;
+  }
+  .weekcal-chip {
+    font-size: 10px;
+    padding: 1px 3px;
+  }
+  .weekcal-event {
+    padding: 2px 3px;
+    font-size: 10px;
+    touch-action: pan-x pan-y; /* se desplaza con el dedo; mover un evento requiere pulsación larga */
+    -webkit-touch-callout: none;
+  }
+  .weekcal-event.moving {
+    touch-action: none;
+  }
+  .weekcal-event:not(.compact) .weekcal-event-title {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .week-panel:not(.expanded) .weekcal-event-time {
+    display: none;
+  }
+  .week-panel:not(.expanded) .week-nav {
+    flex-wrap: wrap;
   }
 }
 
