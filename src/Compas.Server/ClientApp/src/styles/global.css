@@ -1199,6 +1199,17 @@
   font-variant-numeric: tabular-nums;
   color: var(--muted);
 }
+.tl-time-end {
+  display: none;
+}
+.tl-time:hover .tl-time-start {
+  display: none;
+}
+.tl-time:hover .tl-time-end {
+  display: inline;
+  color: var(--text);
+  font-weight: 600;
+}
 .tl-dot {
   position: absolute;
   left: -22px;
@@ -1227,6 +1238,34 @@
   color: var(--muted);
   font-size: 12px;
   padding: 8px 20px;
+}
+/* descanso: una franja pequeña y discreta, distinta de las tarjetas de tarea */
+.tl-block.break {
+  width: fit-content;
+  max-width: 100%;
+  background: rgba(10, 10, 10, 0.06);
+  border: none;
+  box-shadow: none;
+  border-radius: 999px;
+  padding: 5px 14px;
+  gap: 8px;
+  justify-content: flex-start;
+  color: var(--muted);
+  font-size: 12px;
+}
+.tl-break {
+  margin-bottom: 8px;
+}
+.tl-break .tl-time {
+  top: 6px;
+}
+.tl-break .tl-dot {
+  top: 8px;
+  width: 7px;
+  height: 7px;
+  left: -21px;
+  background: var(--bg);
+  border: 1.5px solid var(--color-mid-gray);
 }
 .tl-block.current {
   border-color: var(--color-ink);
@@ -1522,7 +1561,7 @@
 .main-wide .timeline .tl-block {
   transition: border-color 0.12s;
 }
-.main-wide .timeline .tl-block:not(.free):hover {
+.main-wide .timeline .tl-block:not(.free):not(.break):hover {
   border-color: var(--color-ink);
 }
 .proj-row {

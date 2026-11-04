@@ -104,7 +104,7 @@ const PLANNER_INFO = (
         <dt>Planificar desde ahora</dt>
         <dd>
           Pregunta cuánto tiempo quieres dedicar a tareas y reparte las pendientes desde la hora actual, sin
-          pasar de ese tiempo. Lo que no quepa hoy pasa al día siguiente, desde las 08:00. Úsalo cuando cambie algo a mitad de día: una tarea urgente,
+          pasar de ese tiempo. Lo que no quepa hoy pasa al día siguiente, desde las 00:00. Úsalo cuando cambie algo a mitad de día: una tarea urgente,
           una reunión nueva o un retraso.
         </dd>
       </dl>
@@ -700,7 +700,7 @@ function ReplanModal({
         <h2 id="replan-title">Planificar desde ahora</h2>
         <p className="confirm-message">
           Son las <b>{fmtTime(new Date().toISOString())}</b>. Se reparten tus tareas pendientes desde esta hora,
-          respetando los eventos de la agenda. Lo que no quepa hoy pasa al día siguiente, desde las 08:00.
+          respetando los eventos de la agenda. Lo que no quepa hoy pasa al día siguiente, desde las 00:00.
         </p>
         <div className="budget-box">
           <div className="budget-text">
@@ -860,6 +860,18 @@ function planDayLabel(date: Date, today: Date, multiDay = false): string {
   return fmtDateLong(date);
 }
 
+/** Hora de inicio de un bloque; al pasar el ratón por encima muestra la hora de finalización. */
+function TimelineTime({ entry }: { entry: PlanEntryDto }) {
+  return (
+    <div className="tl-time" title={`Termina a las ${fmtTime(entry.end)}`}>
+      <span className="tl-time-start">{fmtTime(entry.start)}</span>
+      <span className="tl-time-end" aria-label={`Termina a las ${fmtTime(entry.end)}`}>
+        {fmtTime(entry.end)}
+      </span>
+    </div>
+  );
+}
+
 function Timeline({
   entries,
   loading,
@@ -987,14 +999,26 @@ function Timeline({
             {emptyDays.map(dayHeader)}
             {showDay && dayHeader(start)}
 
-            {entry.kind === "Free" ? (
+            {entry.kind === "Break" ? (
+              <div className="tl-item tl-break">
+                <TimelineTime entry={entry} />
+                <div className="tl-dot" />
+                <div className="tl-block break">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                    <path d="M4 8h12v6a4 4 0 01-4 4H8a4 4 0 01-4-4V8zM16 10h2a2 2 0 010 4h-2M7 3v2M11 3v2" />
+                  </svg>
+                  <span>Descanso</span>
+                  <span className="tl-dur mono">{fmtDuration(Math.round((end.getTime() - start.getTime()) / 60000))}</span>
+                </div>
+              </div>
+            ) : entry.kind === "Free" ? (
               <div className="tl-item">
-                <div className="tl-time">{fmtTime(entry.start)}</div>
+                <TimelineTime entry={entry} />
                 <div className="tl-block free">{entry.reason || "Hueco libre"}</div>
               </div>
             ) : (
               <div className="tl-item">
-                <div className="tl-time">{fmtTime(entry.start)}</div>
+                <TimelineTime entry={entry} />
                 <div className="tl-dot" style={isCurrent ? { background: "var(--signal)" } : undefined} />
                 <div
                   className={

@@ -42,7 +42,8 @@ public class PlannerService
     /// Genera el plan de un día desde cero, a partir de la hora de inicio indicada
     /// (normalmente el principio de la jornada, o "ahora" si es para el resto del día de hoy).
     /// Con <paramref name="spillToNextDays"/>, lo que no cabe antes de medianoche pasa al día
-    /// siguiente (desde las 08:00) y así sucesivamente, en lugar de quedarse en la bandeja.
+    /// siguiente (desde las 08:00, o desde las 00:00 con <paramref name="spillFromMidnight"/>) y así
+    /// sucesivamente, en lugar de quedarse en la bandeja.
     /// </summary>
     public async Task<DailyPlanDto> GenerateAsync(
         DateOnly date,
@@ -54,6 +55,7 @@ public class PlannerService
         IReadOnlyList<int>? projectIds = null,
         int? spillDays = null,
         int? dueLeadDays = null,
+        bool spillFromMidnight = false,
         CancellationToken ct = default)
     {
         var previousRun = await _db.PlanRuns
@@ -99,7 +101,8 @@ public class PlannerService
                 : remaining.Where(t => t.DueDate is null || DateOnly.FromDateTime(t.DueDate.Value).AddDays(-dueLeadDays.Value) <= day).ToList();
 
             var dayBlocks = _engine.BuildPlan(planDay, fixedEvents, candidates, planStart, budgetLeft, preferredOrder,
-                exactStart: exactStart && i == 0); // los días siguientes empiezan al inicio de la jornada
+                // Los días siguientes empiezan al inicio de la jornada (08:00) o, con spillFromMidnight, a las 00:00.
+                exactStart: i == 0 ? exactStart : spillFromMidnight);
             engineBlocks.AddRange(dayBlocks);
 
             var placed = dayBlocks
@@ -196,7 +199,7 @@ public class PlannerService
     {
         var now = DateTime.Now;
         var today = DateOnly.FromDateTime(now);
-        return GenerateAsync(today, now, budgetMinutes, null, spillToNextDays: true, exactStart: true, projectIds: projectIds, ct: ct);
+        return GenerateAsync(today, now, budgetMinutes, null, spillToNextDays: true, exactStart: true, projectIds: projectIds, spillFromMidnight: true, ct: ct);
     }
 
     /// <summary>
@@ -248,7 +251,19 @@ public class PlannerService
         var daysLeftInWeek = DaysLeftInWeek(today);
         int? spillDays = spill && DateOnly.FromDateTime(lastStart!.Value) < today.AddDays(daysLeftInWeek) ? daysLeftInWeek : null;
 
-        return await GenerateAsync(today, firstStart ?? now, budgetMinutes, workItemIds, spillToNextDays: spill, exactStart: true, projectIds: projectIds, spillDays: spillDays, ct: ct);
+        // Si el plan visto ya empezaba sus días siguientes a las 00:00 (Planificar desde ahora), el reordenado lo mantiene.
+        var spillFromMidnight = false;
+        if (spill)
+        {
+            var viewedRun = await _db.PlanRuns
+                .Where(r => r.PlanDate == today)
+                .OrderByDescending(r => r.GeneratedAt)
+                .Include(r => r.Entries)
+                .FirstOrDefaultAsync(ct);
+            spillFromMidnight = viewedRun?.Entries.Any(e => DateOnly.FromDateTime(e.Start) > today && e.Start.TimeOfDay == TimeSpan.Zero) ?? false;
+        }
+
+        return await GenerateAsync(today, firstStart ?? now, budgetMinutes, workItemIds, spillToNextDays: spill, exactStart: true, projectIds: projectIds, spillDays: spillDays, spillFromMidnight: spillFromMidnight, ct: ct);
     }
 
     /// <summary>
