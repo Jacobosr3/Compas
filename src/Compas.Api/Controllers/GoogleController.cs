@@ -1,5 +1,6 @@
 using Compas.Api.Dtos;
 using Compas.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 
@@ -11,11 +12,13 @@ namespace Compas.Api.Controllers;
 public class GoogleController : ControllerBase
 {
     private readonly GoogleCalendarService _google;
+    private readonly AuthService _auth;
     private readonly ILogger<GoogleController> _logger;
 
-    public GoogleController(GoogleCalendarService google, ILogger<GoogleController> logger)
+    public GoogleController(GoogleCalendarService google, AuthService auth, ILogger<GoogleController> logger)
     {
         _google = google;
+        _auth = auth;
         _logger = logger;
     }
 
@@ -40,35 +43,71 @@ public class GoogleController : ControllerBase
         }
     }
 
-    /// <summary>Destino de la redirección de Google tras elegir cuenta; vuelve al cliente web.</summary>
+    /// <summary>
+    /// Destino de la redirección de Google tras elegir cuenta; vuelve al cliente web. Sirve para dos cosas:
+    /// conectar el calendario (con sesión iniciada) o iniciar sesión en Compás con esa cuenta.
+    /// No exige sesión porque en el segundo caso aún no la hay; el "state" (de un solo uso) ata la vuelta a quien salió.
+    /// </summary>
     [HttpGet("callback")]
+    [AllowAnonymous]
     public async Task<IActionResult> Callback([FromQuery] string? code, [FromQuery] string? state, [FromQuery] string? error, CancellationToken ct)
     {
-        var back = _google.TakeReturnUrl(state);
-        if (back is null)
-            return Redirect(QueryHelpers.AddQueryString(_google.DefaultReturnUrl,
+        var oauth = _google.TakeState(state);
+        if (oauth is null)
+            return Redirect(QueryHelpers.AddQueryString(_google.DefaultReturnUrl(),
                 new Dictionary<string, string?> { ["google"] = "error", ["message"] = "La solicitud de conexión no es válida o ha caducado." }));
 
+        var back = oauth.ReturnUrl;
+        var signIn = oauth.Purpose == GoogleOAuthPurpose.SignIn;
+        // En el inicio de sesión los avisos viajan como "auth"; en la conexión del calendario, como "google".
+        string Fail(string message) => QueryHelpers.AddQueryString(back,
+            new Dictionary<string, string?> { [signIn ? "auth" : "google"] = "error", ["message"] = message });
+
         if (!string.IsNullOrEmpty(error) || string.IsNullOrEmpty(code))
-            return Redirect(QueryHelpers.AddQueryString(back,
-                new Dictionary<string, string?> { ["google"] = "error", ["message"] = error == "access_denied" ? "No has dado permiso a Compás." : "Google no completó la conexión." }));
+            return Redirect(Fail(error == "access_denied" ? "No has dado permiso a Compás." : "Google no completó la conexión."));
+
+        // Conectar el calendario solo tiene sentido con una sesión iniciada.
+        if (!signIn && User.Identity?.IsAuthenticated != true)
+            return Redirect(Fail("Inicia sesión en Compás antes de conectar Google Calendar."));
 
         try
         {
-            await _google.CompleteConnectionAsync(code, ct);
-            return Redirect(QueryHelpers.AddQueryString(back, "google", "connected"));
+            if (!signIn)
+            {
+                await _google.CompleteConnectionAsync(code, ct);
+                return Redirect(QueryHelpers.AddQueryString(back, "google", "connected"));
+            }
+
+            // Primero se comprueba quién es y si tiene acceso; solo entonces se toca la conexión con el calendario.
+            var google = await _google.ExchangeCodeAsync(code, ct);
+            var user = await _auth.SignInWithGoogleAsync(google, ct);
+            await _auth.SignInAsync(HttpContext, user, oauth.Remember);
+
+            // Con la misma cuenta, el calendario queda conectado de una vez. Si ya hay otra distinta conectada no se sustituye.
+            try
+            {
+                if (!await _google.IsConnectedToOtherAccountAsync(google.Email, ct))
+                    await _google.SaveConnectionAsync(google, ct);
+            }
+            catch (GoogleException ex)
+            {
+                _logger.LogWarning(ex, "Sesión iniciada, pero no se pudo conectar el calendario de Google.");
+            }
+            return Redirect(QueryHelpers.AddQueryString(back, "auth", "ok"));
+        }
+        catch (AuthException ex)
+        {
+            return Redirect(Fail(ex.Message));
         }
         catch (GoogleException ex)
         {
-            return Redirect(QueryHelpers.AddQueryString(back,
-                new Dictionary<string, string?> { ["google"] = "error", ["message"] = ex.Message }));
+            return Redirect(Fail(ex.Message));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             // Es una navegación del navegador: nunca debe acabar en una página de error en bruto.
             _logger.LogError(ex, "Error al completar la conexión con Google.");
-            return Redirect(QueryHelpers.AddQueryString(back,
-                new Dictionary<string, string?> { ["google"] = "error", ["message"] = "No se pudo completar la conexión con Google." }));
+            return Redirect(Fail(signIn ? "No se pudo iniciar sesión con Google." : "No se pudo completar la conexión con Google."));
         }
     }
 

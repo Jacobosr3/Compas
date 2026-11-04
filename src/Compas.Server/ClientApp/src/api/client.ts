@@ -3,6 +3,9 @@
 // En ambos casos la URL base es relativa: no hay que configurar nada.
 const API_BASE = "";
 
+/** Se emite cuando la API responde 401: la sesión caducó o se cerró, y hay que volver a iniciar sesión. */
+export const UNAUTHORIZED_EVENT = "compas:unauthorized";
+
 export class ApiError extends Error {
   status?: number;
 
@@ -23,6 +26,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new ApiError("No se pudo conectar con la API. ¿Está el backend arrancado?");
   }
+
+  if (res.status === 401 && !path.startsWith("/api/auth/")) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");

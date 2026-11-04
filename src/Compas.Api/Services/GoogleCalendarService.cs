@@ -23,6 +23,15 @@ public class GoogleException : Exception
     public GoogleException(string message, bool needsReconnect = false) : base(message) => NeedsReconnect = needsReconnect;
 }
 
+/// <summary>Para qué se inició el flujo de Google: conectar el calendario (con sesión) o iniciar sesión en Compás.</summary>
+public enum GoogleOAuthPurpose { Connect, SignIn }
+
+/// <summary>Datos que se recuerdan entre salir hacia Google y volver (el "state" de OAuth).</summary>
+public record GoogleOAuthState(string ReturnUrl, GoogleOAuthPurpose Purpose, bool Remember);
+
+/// <summary>Resultado de canjear el código de Google: identidad verificada, permisos y tokens (aún sin guardar).</summary>
+public record GoogleSignIn(string Email, bool EmailVerified, string Subject, string? Name, string AccessToken, string? RefreshToken, bool CanWrite, JsonNode? ExpiresIn);
+
 /// <summary>
 /// Conexión con Google Calendar: OAuth (el usuario elige la cuenta), lista de calendarios,
 /// selección de los que se incluyen en Compás, importación de sus eventos y escritura de vuelta
@@ -72,13 +81,13 @@ public class GoogleCalendarService
     /// Dirección de Google a la que enviar al usuario. Con "select_account" Google le pide elegir la
     /// cuenta, y "consent" garantiza que devuelva un token de actualización.
     /// </summary>
-    public string BuildAuthUrl(string? returnUrl)
+    public string BuildAuthUrl(string? returnUrl, GoogleOAuthPurpose purpose = GoogleOAuthPurpose.Connect, bool remember = false)
     {
         if (!IsConfigured)
             throw new GoogleException("Google Calendar no está configurado: faltan el ClientId y el ClientSecret.");
 
         var state = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
-        _cache.Set(StateKey(state), SafeReturnUrl(returnUrl), StateLifetime);
+        _cache.Set(StateKey(state), new GoogleOAuthState(SafeReturnUrl(returnUrl, purpose), purpose, remember), StateLifetime);
 
         return QueryHelpers.AddQueryString(_options.AuthUrl, new Dictionary<string, string?>
         {
@@ -92,18 +101,25 @@ public class GoogleCalendarService
         });
     }
 
-    /// <summary>Recupera (y consume) la dirección de vuelta asociada a un "state"; null si no es válido o caducó.</summary>
-    public string? TakeReturnUrl(string? state)
+    /// <summary>Recupera (y consume) lo asociado a un "state"; null si no es válido o caducó.</summary>
+    public GoogleOAuthState? TakeState(string? state)
     {
-        if (string.IsNullOrEmpty(state) || !_cache.TryGetValue(StateKey(state), out string? url)) return null;
+        if (string.IsNullOrEmpty(state) || !_cache.TryGetValue(StateKey(state), out GoogleOAuthState? value)) return null;
         _cache.Remove(StateKey(state));
-        return url;
+        return value;
     }
 
-    public string DefaultReturnUrl => SafeReturnUrl(null);
+    public string DefaultReturnUrl(GoogleOAuthPurpose purpose = GoogleOAuthPurpose.Connect) => SafeReturnUrl(null, purpose);
 
     /// <summary>Intercambia el código de Google por tokens, guarda la cuenta y carga sus calendarios.</summary>
-    public async Task CompleteConnectionAsync(string code, CancellationToken ct = default)
+    public async Task CompleteConnectionAsync(string code, CancellationToken ct = default) =>
+        await SaveConnectionAsync(await ExchangeCodeAsync(code, ct), ct);
+
+    /// <summary>
+    /// Canjea el código por tokens y lee la identidad de la cuenta, sin guardar nada: así, al iniciar sesión,
+    /// se puede decidir si esa cuenta tiene acceso antes de tocar los datos de la conexión.
+    /// </summary>
+    public async Task<GoogleSignIn> ExchangeCodeAsync(string code, CancellationToken ct = default)
     {
         var tokens = await RequestTokenAsync(new Dictionary<string, string>
         {
@@ -116,7 +132,6 @@ public class GoogleCalendarService
 
         var access = tokens["access_token"]?.GetValue<string>() ?? throw new GoogleException("Google no devolvió un token de acceso.");
         var refresh = tokens["refresh_token"]?.GetValue<string>();
-        CacheAccessToken(access, tokens["expires_in"]);
 
         // Google devuelve los permisos que el usuario ha concedido de verdad (puede desmarcar alguno).
         // Se compara permiso a permiso: "calendar.events.readonly" contiene el texto "calendar.events" pero no permite escribir.
@@ -124,7 +139,26 @@ public class GoogleCalendarService
         var canWrite = granted.Contains(WriteScope, StringComparer.Ordinal)
                        || granted.Contains("https://www.googleapis.com/auth/calendar", StringComparer.Ordinal);
 
-        var email = (await GetJsonAsync(_options.UserInfoUrl, access, ct))["email"]?.GetValue<string>() ?? "(cuenta de Google)";
+        var info = await GetJsonAsync(_options.UserInfoUrl, access, ct);
+        var email = info["email"]?.GetValue<string>() ?? "(cuenta de Google)";
+        var verified = info["email_verified"] is { } v && v.GetValueKind() == System.Text.Json.JsonValueKind.True;
+        var subject = info["sub"]?.GetValue<string>() ?? "";
+
+        return new GoogleSignIn(email, verified, subject, info["name"]?.GetValue<string>(), access, refresh, canWrite, tokens["expires_in"]);
+    }
+
+    /// <summary>¿Hay ya conectada otra cuenta de Google distinta de esta? (conectarla sustituiría la actual y sus eventos importados).</summary>
+    public async Task<bool> IsConnectedToOtherAccountAsync(string email, CancellationToken ct = default)
+    {
+        var existing = await _db.GoogleAccounts.Select(a => a.Email).FirstOrDefaultAsync(ct);
+        return existing is not null && !string.Equals(existing, email, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>Guarda la cuenta de Google conectada (cifrando el token) y carga sus calendarios.</summary>
+    public async Task SaveConnectionAsync(GoogleSignIn result, CancellationToken ct = default)
+    {
+        var (email, access, refresh, canWrite) = (result.Email, result.AccessToken, result.RefreshToken, result.CanWrite);
+        CacheAccessToken(access, result.ExpiresIn);
 
         var account = await _db.GoogleAccounts.FirstOrDefaultAsync(ct);
         if (account is not null && !string.Equals(account.Email, email, StringComparison.OrdinalIgnoreCase))
@@ -744,13 +778,13 @@ public class GoogleCalendarService
     private static string StateKey(string state) => "google-state:" + state;
 
     /// <summary>Solo se vuelve a direcciones locales (evita redirecciones abiertas); si no, al cliente por defecto.</summary>
-    private string SafeReturnUrl(string? returnUrl)
+    private string SafeReturnUrl(string? returnUrl, GoogleOAuthPurpose purpose)
     {
         if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri)
             && uri.Scheme is "http" or "https"
             && uri.Host is "localhost" or "127.0.0.1" or "[::1]")
             return uri.GetLeftPart(UriPartial.Path);
 
-        return _options.DefaultClientUrl.TrimEnd('/') + "/agenda";
+        return _options.DefaultClientUrl.TrimEnd('/') + (purpose == GoogleOAuthPurpose.SignIn ? "/" : "/agenda");
     }
 }

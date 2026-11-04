@@ -1,6 +1,15 @@
 // Tipos que reflejan exactamente los DTOs del backend (Compas.Api/Dtos).
 // Mantenerlos sincronizados si cambian los records de C#.
 
+/** Estado de la sesión y de las opciones de acceso (Compas.Api/Dtos/AuthDtos.cs). */
+export interface AuthStatusDto {
+  authenticated: boolean;
+  email: string | null;
+  displayName: string | null;
+  registrationOpen: boolean;
+  googleConfigured: boolean;
+}
+
 export type Priority = "Low" | "Medium" | "High" | "Urgent";
 export type ProjectStatus = "Active" | "OnHold" | "Completed" | "Archived";
 export type WorkItemStatus =

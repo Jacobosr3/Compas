@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
+import { ConfirmModal } from "./ConfirmModal";
 
 const items = [
   {
@@ -42,6 +45,9 @@ const items = [
 ];
 
 export function Sidebar() {
+  const auth = useAuth();
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
+
   return (
     <aside className="rail-left">
       <div className="brand">C</div>
@@ -58,6 +64,28 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
+      <button
+        className="nav-item rail-account"
+        title={auth.email ? `Cerrar sesión (${auth.email})` : "Cerrar sesión"}
+        aria-label="Cerrar sesión"
+        onClick={() => setConfirmingLogout(true)}
+      >
+        <span className="i">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M15 4h3a2 2 0 012 2v12a2 2 0 01-2 2h-3M10 8l-4 4 4 4M6 12h10" />
+          </svg>
+        </span>
+        <span>Salir</span>
+      </button>
+      {confirmingLogout && (
+        <ConfirmModal
+          title="Cerrar sesión"
+          message={`Se cerrará la sesión de ${auth.email ?? "esta cuenta"} en este dispositivo. Para volver a entrar tendrás que iniciar sesión.`}
+          confirmLabel="Cerrar sesión"
+          onConfirm={auth.logout}
+          onCancel={() => setConfirmingLogout(false)}
+        />
+      )}
     </aside>
   );
 }

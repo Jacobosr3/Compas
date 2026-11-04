@@ -182,3 +182,24 @@ dotnet user-secrets set "Google:ClientSecret" "TU_SECRETO" --project src/Compas.
 ```
 
 En Postgres/Supabase hay que aplicar antes `scripts/add_google_calendar_postgres.sql`.
+
+## Inicio de sesión
+
+Toda la API exige sesión (excepto `/api/auth/*` y el callback de Google). La pantalla de acceso ofrece
+**correo y contraseña** y **Continuar con Google**; con Google, además, queda conectado el calendario.
+**Recordar este dispositivo** guarda una cookie de 90 días que se renueva con el uso (sin marcar, la sesión
+dura 12 h o hasta cerrar el navegador). Las contraseñas se guardan con PBKDF2-SHA256, nunca en claro, y los
+intentos de contraseña están limitados a 10 por minuto.
+
+Compás es de un solo propietario: el primer usuario que se registra (o el correo de `Auth:OwnerEmail`, si lo
+indicas) es el propietario y el registro se cierra. Para no depender de quién llegue primero, fija el correo:
+
+```powershell
+dotnet user-secrets set "Auth:OwnerEmail" "tu@correo.com" --project src/Compas.Api
+```
+
+El inicio de sesión con Google usa las mismas credenciales y el mismo URI de redireccionamiento que el
+calendario. En Postgres/Supabase hay que aplicar antes `scripts/add_users_postgres.sql`.
+
+Al llevarla a la nube: las claves de Data Protection (que firman la cookie y cifran los tokens de Google) deben
+guardarse en un almacén persistente, y la cookie ha de servirse por HTTPS.

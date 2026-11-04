@@ -12,7 +12,20 @@ import type {
   WorkItemStatus,
   SubtaskDto,
   GoogleStatusDto,
+  AuthStatusDto,
 } from "./types";
+
+export const authApi = {
+  status: () => api.get<AuthStatusDto>("/api/auth/status"),
+  login: (email: string, password: string, remember: boolean) =>
+    api.post<AuthStatusDto>("/api/auth/login", { email, password, remember }),
+  register: (email: string, password: string, displayName: string, remember: boolean) =>
+    api.post<AuthStatusDto>("/api/auth/register", { email, password, displayName: displayName || null, remember }),
+  logout: () => api.post<void>("/api/auth/logout"),
+  /** Devuelve la dirección de Google a la que navegar para iniciar sesión; al terminar se vuelve a `returnUrl`. */
+  googleStart: (returnUrl: string, remember: boolean) =>
+    api.post<{ url: string }>("/api/auth/google", { returnUrl, remember }),
+};
 
 export const projectsApi = {
   list: () => api.get<ProjectDto[]>("/api/projects"),

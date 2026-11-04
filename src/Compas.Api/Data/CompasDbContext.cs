@@ -16,6 +16,7 @@ public class CompasDbContext : DbContext
     public DbSet<PlanEntry> PlanEntries => Set<PlanEntry>();
     public DbSet<GoogleAccount> GoogleAccounts => Set<GoogleAccount>();
     public DbSet<GoogleCalendarSelection> GoogleCalendarSelections => Set<GoogleCalendarSelection>();
+    public DbSet<AppUser> Users => Set<AppUser>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -61,6 +62,16 @@ public class CompasDbContext : DbContext
             e.Property(g => g.Email).IsRequired().HasMaxLength(320);
             e.Property(g => g.RefreshToken).IsRequired();
             e.Property(g => g.DefaultCalendarId).HasMaxLength(400);
+        });
+
+        modelBuilder.Entity<AppUser>(e =>
+        {
+            e.ToTable("AppUsers");
+            e.Property(u => u.Email).IsRequired().HasMaxLength(320);
+            e.Property(u => u.DisplayName).HasMaxLength(100);
+            e.Property(u => u.GoogleSubject).HasMaxLength(100);
+            e.HasIndex(u => u.Email).IsUnique();
+            e.HasIndex(u => u.GoogleSubject);
         });
 
         modelBuilder.Entity<GoogleCalendarSelection>(e =>
