@@ -191,15 +191,62 @@ Toda la API exige sesión (excepto `/api/auth/*` y el callback de Google). La pa
 dura 12 h o hasta cerrar el navegador). Las contraseñas se guardan con PBKDF2-SHA256, nunca en claro, y los
 intentos de contraseña están limitados a 10 por minuto.
 
-Compás es de un solo propietario: el primer usuario que se registra (o el correo de `Auth:OwnerEmail`, si lo
-indicas) es el propietario y el registro se cierra. Para no depender de quién llegue primero, fija el correo:
+**Cada cuenta tiene sus propios datos**: proyectos, tareas, eventos, planes y su conexión con Google Calendar
+llevan un `UserId` y toda consulta se filtra por el usuario de la sesión (filtros globales de EF en
+`CompasDbContext`), así que nadie ve ni modifica lo de otra cuenta. Los datos anteriores a las cuentas pasan a
+la primera cuenta que existía. Cualquiera puede crear una cuenta; para una instalación privada limita los correos
+(PowerShell):
 
 ```powershell
-dotnet user-secrets set "Auth:OwnerEmail" "tu@correo.com" --project src/Compas.Api
+dotnet user-secrets set "Auth:AllowedEmails:0" "tu@correo.com" --project src/Compas.Api
 ```
 
+(o `Auth:AllowRegistration` = `false` para cerrar el registro). Si una cuenta se creó con contraseña y luego se
+entra con Google con el mismo correo, se vincula y se descarta esa contraseña (no se había verificado el correo);
+a partir de ahí se entra con Google.
+
 El inicio de sesión con Google usa las mismas credenciales y el mismo URI de redireccionamiento que el
-calendario. En Postgres/Supabase hay que aplicar antes `scripts/add_users_postgres.sql`.
+calendario. En Postgres/Supabase hay que aplicar antes `scripts/add_users_postgres.sql` y
+`scripts/add_user_ownership_postgres.sql` (en ese orden) **antes** de arrancar la API nueva.
 
 Al llevarla a la nube: las claves de Data Protection (que firman la cookie y cifran los tokens de Google) deben
 guardarse en un almacén persistente, y la cookie ha de servirse por HTTPS.
+
+## Despliegue en la nube (Vercel + Supabase)
+
+Para usar Compás sin arrancarlo desde Visual Studio: el **cliente** (Vite) va en un proyecto de Vercel, la **API**
+(ASP.NET Core) en otro proyecto de Vercel con el [Container runtime](https://vercel.com/docs/functions/runtimes/container)
+(beta; Vercel no tiene runtime de .NET), y la base de datos sigue en Supabase. El proyecto del cliente reenvía `/api/*`
+a la API (`vercel.json`), así que el navegador solo habla con un dominio y las cookies de sesión funcionan sin CORS.
+
+1. **Supabase**: aplica `scripts/add_dataprotection_postgres.sql` (claves de cifrado en la BD, para que la sesión y los
+   tokens de Google sobrevivan a los reinicios) además de los scripts anteriores.
+2. **Proyecto de la API** (Vercel → Add New → Project → este repositorio): *Root Directory* `src/Compas.Api`; Vercel
+   detecta el `Dockerfile`. En *Settings → Functions* elige la región `fra1` (cerca de Supabase, `eu-central-1`).
+   Variables de entorno (Settings → Environment Variables):
+
+   | Variable | Valor |
+   |---|---|
+   | `ASPNETCORE_ENVIRONMENT` | `Production` |
+   | `PORT` | `8080` |
+   | `Database__Provider` | `Postgres` |
+   | `ConnectionStrings__Postgres` | la cadena del *pooler* de Supabase (la misma de tus user-secrets) |
+   | `Google__ClientId` / `Google__ClientSecret` | las de tus user-secrets |
+   | `Google__RedirectUri` | `https://TU-DOMINIO/api/google/callback` |
+   | `Google__DefaultClientUrl` | `https://TU-DOMINIO` |
+   | `Auth__AllowedEmails__0` | tu correo (**importante**: sin esto cualquiera puede crear cuenta en tu URL pública) |
+
+3. **Proyecto del cliente** (otro proyecto del mismo repositorio): *Root Directory* `src/Compas.Server/ClientApp`
+   (preset Vite). Antes de desplegar, cambia en `vercel.json` el destino del primer `rewrite` por la URL del proyecto
+   de la API. `TU-DOMINIO` es el dominio de este proyecto.
+4. **Google Cloud Console**: añade `https://TU-DOMINIO/api/google/callback` a los URI de redireccionamiento autorizados
+   y publica la app (estado «En producción») para que el token no caduque a los 7 días.
+5. En *Settings → Deployment Protection* del proyecto de la API, deja el dominio de producción sin protección (si no,
+   el reenvío desde el cliente recibe la página de acceso de Vercel).
+6. Entra con tu cuenta de Google. La conexión con Google Calendar hay que volver a hacerla una vez (los tokens
+   guardados estaban cifrados con las claves del equipo local, no con las de la base de datos).
+
+Notas: la API se apaga tras unos minutos sin tráfico y la primera petición tarda unos segundos; no hay tareas en
+segundo plano (el calendario se sincroniza con las peticiones). La documentación Swagger solo existe en desarrollo.
+`/healthz` responde `ok` sin sesión. Alternativa sin Vercel para la API: cualquier host de contenedores (Render, Cloud
+Run, Fly.io) con el mismo `Dockerfile` y las mismas variables.

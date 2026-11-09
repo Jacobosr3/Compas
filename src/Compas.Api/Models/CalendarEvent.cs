@@ -4,9 +4,11 @@ namespace Compas.Api.Models;
 /// Un evento de agenda "fijo" (reunión, cita, etc.). El motor de planificación
 /// nunca mueve estos bloques: los respeta como límites duros del día.
 /// </summary>
-public class CalendarEvent
+public class CalendarEvent : IUserOwned
 {
     public int Id { get; set; }
+    /// <summary>Propietario del registro (ver <see cref="IUserOwned"/>).</summary>
+    public int UserId { get; set; }
     public string Title { get; set; } = string.Empty;
     public DateTime StartTime { get; set; }
     public DateTime EndTime { get; set; }

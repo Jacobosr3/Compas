@@ -45,23 +45,35 @@ public class AuthService
         return MailAddress.TryCreate(email, out var parsed) && parsed.Address == email && email.Contains('.', StringComparison.Ordinal);
     }
 
-    /// <summary>¿Puede este correo crear una cuenta? Con OwnerEmail, solo ese; si no, solo el primer usuario.</summary>
-    public async Task<bool> CanRegisterAsync(string email, CancellationToken ct = default)
+    /// <summary>¿Puede este correo crear una cuenta? Con AllowedEmails, solo los de la lista.</summary>
+    public bool CanRegister(string email) =>
+        _options.AllowRegistration
+        && (_options.AllowedEmails.Count == 0 || _options.AllowedEmails.Any(e => NormalizeEmail(e) == email));
+
+    /// <summary>¿Se pueden crear cuentas? (decide si la pantalla ofrece «Crear cuenta»).</summary>
+    public Task<bool> IsRegistrationOpenAsync(CancellationToken ct = default) => Task.FromResult(_options.AllowRegistration);
+
+    /// <summary>
+    /// Los datos anteriores a las cuentas no tienen propietario (UserId 0): los reclama el primer usuario que se crea,
+    /// que es quien venía usando la app. Con cuentas ya existentes no hay nada que reclamar.
+    /// </summary>
+    private async Task ClaimLegacyDataAsync(int userId, CancellationToken ct)
     {
-        if (!string.IsNullOrWhiteSpace(_options.OwnerEmail))
-            return NormalizeEmail(_options.OwnerEmail) == email && !await _db.Users.AnyAsync(u => u.Email == email, ct);
-        return !await _db.Users.AnyAsync(ct);
+        await _db.Projects.IgnoreQueryFilters().Where(x => x.UserId == 0).ExecuteUpdateAsync(s => s.SetProperty(x => x.UserId, userId), ct);
+        await _db.WorkItems.IgnoreQueryFilters().Where(x => x.UserId == 0).ExecuteUpdateAsync(s => s.SetProperty(x => x.UserId, userId), ct);
+        await _db.CalendarEvents.IgnoreQueryFilters().Where(x => x.UserId == 0).ExecuteUpdateAsync(s => s.SetProperty(x => x.UserId, userId), ct);
+        await _db.PlanRuns.IgnoreQueryFilters().Where(x => x.UserId == 0).ExecuteUpdateAsync(s => s.SetProperty(x => x.UserId, userId), ct);
+        await _db.GoogleAccounts.IgnoreQueryFilters().Where(x => x.UserId == 0).ExecuteUpdateAsync(s => s.SetProperty(x => x.UserId, userId), ct);
+        await _db.GoogleCalendarSelections.IgnoreQueryFilters().Where(x => x.UserId == 0).ExecuteUpdateAsync(s => s.SetProperty(x => x.UserId, userId), ct);
     }
 
-    /// <summary>¿Hay alguna cuenta que todavía se pueda crear? (decide si la pantalla ofrece «Crear cuenta»).</summary>
-    public async Task<bool> IsRegistrationOpenAsync(CancellationToken ct = default)
+    /// <summary>Guarda un usuario nuevo; si es el primero de la instalación, se queda con los datos que ya había.</summary>
+    private async Task AddUserAsync(AppUser user, CancellationToken ct)
     {
-        if (!string.IsNullOrWhiteSpace(_options.OwnerEmail))
-        {
-            var owner = NormalizeEmail(_options.OwnerEmail);
-            return !await _db.Users.AnyAsync(u => u.Email == owner, ct);
-        }
-        return !await _db.Users.AnyAsync(ct);
+        var first = !await _db.Users.AnyAsync(ct);
+        _db.Users.Add(user);
+        await _db.SaveChangesAsync(ct);
+        if (first) await ClaimLegacyDataAsync(user.Id, ct);
     }
 
     // ---------------- Contraseñas ----------------
@@ -102,8 +114,10 @@ public class AuthService
         if (password is null || password.Length < MinPasswordLength)
             throw new AuthException($"La contraseña debe tener al menos {MinPasswordLength} caracteres.");
         if (password.Length > MaxPasswordLength) throw new AuthException($"La contraseña no puede pasar de {MaxPasswordLength} caracteres.");
-        if (!await CanRegisterAsync(email, ct))
-            throw new AuthException("El registro está cerrado: esta instalación de Compás ya tiene propietario.", 403);
+        if (!CanRegister(email))
+            throw new AuthException("El registro está cerrado para este correo.", 403);
+        if (await _db.Users.AnyAsync(u => u.Email == email, ct))
+            throw new AuthException("Ya existe una cuenta con ese correo. Inicia sesión.", 409);
 
         var name = displayName?.Trim();
         var user = new AppUser
@@ -113,8 +127,7 @@ public class AuthService
             PasswordHash = HashPassword(password),
             LastLoginAt = DateTime.UtcNow
         };
-        _db.Users.Add(user);
-        await _db.SaveChangesAsync(ct);
+        await AddUserAsync(user, ct);
         return user;
     }
 
@@ -146,22 +159,29 @@ public class AuthService
         var user = await _db.Users.FirstOrDefaultAsync(u => u.GoogleSubject == google.Subject, ct)
                    ?? await _db.Users.FirstOrDefaultAsync(u => u.Email == email, ct);
 
+        var isNew = user is null;
         if (user is null)
         {
-            if (!await CanRegisterAsync(email, ct))
-                throw new AuthException("Esta cuenta de Google no tiene acceso a Compás.", 403);
+            if (!CanRegister(email))
+                throw new AuthException("Esta cuenta de Google no puede crear una cuenta en Compás.", 403);
             user = new AppUser { Email = email, DisplayName = google.Name };
-            _db.Users.Add(user);
         }
         else if (user.GoogleSubject is not null && user.GoogleSubject != google.Subject)
         {
             throw new AuthException("Este correo ya está vinculado a otra cuenta de Google.", 403);
         }
 
+        // Una cuenta creada con contraseña sin verificar el correo podría haberla creado otra persona: al demostrar
+        // Google que el correo es de quien entra ahora, esa contraseña se descarta (se entra con Google).
+        if (!user.EmailVerified && user.PasswordHash is not null && !isNew)
+            user.PasswordHash = null;
+
         user.GoogleSubject = google.Subject;
+        user.EmailVerified = true;
         user.DisplayName ??= google.Name;
         user.LastLoginAt = DateTime.UtcNow;
-        await _db.SaveChangesAsync(ct);
+        if (isNew) await AddUserAsync(user, ct);
+        else await _db.SaveChangesAsync(ct);
         return user;
     }
 

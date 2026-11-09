@@ -52,7 +52,7 @@ public class CalendarEventsController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<ActionResult<CalendarEventDto>> GetById(int id, CancellationToken ct)
     {
-        var evt = await _db.CalendarEvents.FindAsync(new object?[] { id }, ct);
+        var evt = await _db.CalendarEvents.FirstOrDefaultAsync(x => x.Id == id, ct);
         return evt is null ? NotFound() : ToDto(evt, await CalendarColorsAsync(ct));
     }
 
@@ -99,7 +99,7 @@ public class CalendarEventsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<CalendarEventDto>> Update(int id, UpdateCalendarEventDto dto, CancellationToken ct)
     {
-        var evt = await _db.CalendarEvents.FindAsync(new object?[] { id }, ct);
+        var evt = await _db.CalendarEvents.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (evt is null) return NotFound();
 
         if (string.IsNullOrWhiteSpace(dto.Title))
@@ -155,7 +155,7 @@ public class CalendarEventsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var evt = await _db.CalendarEvents.FindAsync(new object?[] { id }, ct);
+        var evt = await _db.CalendarEvents.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (evt is null) return NotFound();
 
         try

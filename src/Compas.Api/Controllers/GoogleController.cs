@@ -13,12 +13,14 @@ public class GoogleController : ControllerBase
 {
     private readonly GoogleCalendarService _google;
     private readonly AuthService _auth;
+    private readonly CurrentUser _currentUser;
     private readonly ILogger<GoogleController> _logger;
 
-    public GoogleController(GoogleCalendarService google, AuthService auth, ILogger<GoogleController> logger)
+    public GoogleController(GoogleCalendarService google, AuthService auth, CurrentUser currentUser, ILogger<GoogleController> logger)
     {
         _google = google;
         _auth = auth;
+        _currentUser = currentUser;
         _logger = logger;
     }
 
@@ -82,6 +84,7 @@ public class GoogleController : ControllerBase
             var google = await _google.ExchangeCodeAsync(code, ct);
             var user = await _auth.SignInWithGoogleAsync(google, ct);
             await _auth.SignInAsync(HttpContext, user, oauth.Remember);
+            _currentUser.Set(user.Id); // esta petición aún no lleva la cookie nueva: lo que sigue (calendario) es de este usuario
 
             // Con la misma cuenta, el calendario queda conectado de una vez. Si ya hay otra distinta conectada no se sustituye.
             try

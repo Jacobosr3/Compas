@@ -45,20 +45,25 @@ public class GoogleCalendarService
         "openid email https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events";
     private const string WriteScope = "https://www.googleapis.com/auth/calendar.events";
     private const string AccessTokenCacheKey = "google-access-token";
+    // Cada usuario tiene su propio token de acceso en caché.
+    private string AccessTokenKey => AccessTokenCacheKey + ":" + _currentUser.UserId;
     private static readonly TimeSpan StateLifetime = TimeSpan.FromMinutes(10);
 
     // Evita dos sincronizaciones a la vez (botón de la agenda y planificador).
     private static readonly SemaphoreSlim SyncLock = new(1, 1);
 
     private readonly CompasDbContext _db;
+    private readonly CurrentUser _currentUser;
     private readonly IHttpClientFactory _httpFactory;
     private readonly GoogleOptions _options;
     private readonly IMemoryCache _cache;
     private readonly IDataProtector _protector;
+    private readonly ITimeLimitedDataProtector _stateProtector;
     private readonly ILogger<GoogleCalendarService> _logger;
 
     public GoogleCalendarService(
         CompasDbContext db,
+        CurrentUser currentUser,
         IHttpClientFactory httpFactory,
         IOptions<GoogleOptions> options,
         IMemoryCache cache,
@@ -66,10 +71,14 @@ public class GoogleCalendarService
         ILogger<GoogleCalendarService> logger)
     {
         _db = db;
+        _currentUser = currentUser;
         _httpFactory = httpFactory;
         _options = options.Value;
         _cache = cache;
         _protector = dataProtection.CreateProtector("Compas.Google.RefreshToken");
+        // El "state" de OAuth va cifrado y con caducidad en la propia dirección, en vez de guardarse en la memoria del
+        // servidor: en la nube la vuelta de Google puede llegar a otra instancia (o tras un reinicio).
+        _stateProtector = dataProtection.CreateProtector("Compas.Google.OAuthState").ToTimeLimitedDataProtector();
         _logger = logger;
     }
 
@@ -86,8 +95,9 @@ public class GoogleCalendarService
         if (!IsConfigured)
             throw new GoogleException("Google Calendar no está configurado: faltan el ClientId y el ClientSecret.");
 
-        var state = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
-        _cache.Set(StateKey(state), new GoogleOAuthState(SafeReturnUrl(returnUrl, purpose), purpose, remember), StateLifetime);
+        var state = _stateProtector.Protect(
+            System.Text.Json.JsonSerializer.Serialize(new GoogleOAuthState(SafeReturnUrl(returnUrl, purpose), purpose, remember)),
+            StateLifetime);
 
         return QueryHelpers.AddQueryString(_options.AuthUrl, new Dictionary<string, string?>
         {
@@ -101,13 +111,23 @@ public class GoogleCalendarService
         });
     }
 
-    /// <summary>Recupera (y consume) lo asociado a un "state"; null si no es válido o caducó.</summary>
+    /// <summary>Recupera lo asociado a un "state"; null si no es válido, no es nuestro o caducó.</summary>
     public GoogleOAuthState? TakeState(string? state)
     {
-        if (string.IsNullOrEmpty(state) || !_cache.TryGetValue(StateKey(state), out GoogleOAuthState? value)) return null;
-        _cache.Remove(StateKey(state));
-        return value;
+        if (string.IsNullOrEmpty(state)) return null;
+        try
+        {
+            return System.Text.Json.JsonSerializer.Deserialize<GoogleOAuthState>(_stateProtector.Unprotect(state));
+        }
+        catch (Exception ex) when (ex is CryptographicException or System.Text.Json.JsonException)
+        {
+            return null;
+        }
     }
+
+    private bool IsPublicClientHost(string host) =>
+        Uri.TryCreate(_options.DefaultClientUrl, UriKind.Absolute, out var client)
+        && string.Equals(client.Host, host, StringComparison.OrdinalIgnoreCase);
 
     public string DefaultReturnUrl(GoogleOAuthPurpose purpose = GoogleOAuthPurpose.Connect) => SafeReturnUrl(null, purpose);
 
@@ -648,12 +668,12 @@ public class GoogleCalendarService
         _db.GoogleCalendarSelections.RemoveRange(await _db.GoogleCalendarSelections.ToListAsync(ct));
         _db.GoogleAccounts.RemoveRange(await _db.GoogleAccounts.ToListAsync(ct));
         await _db.SaveChangesAsync(ct);
-        _cache.Remove(AccessTokenCacheKey);
+        _cache.Remove(AccessTokenKey);
     }
 
     private async Task<string> GetAccessTokenAsync(GoogleAccount account, CancellationToken ct)
     {
-        if (_cache.TryGetValue(AccessTokenCacheKey, out string? cached) && cached is not null) return cached;
+        if (_cache.TryGetValue(AccessTokenKey, out string? cached) && cached is not null) return cached;
 
         string refresh;
         try
@@ -682,7 +702,7 @@ public class GoogleCalendarService
     private void CacheAccessToken(string token, JsonNode? expiresIn)
     {
         var seconds = expiresIn is null ? 3000 : Math.Max(60, expiresIn.GetValue<int>() - 60);
-        _cache.Set(AccessTokenCacheKey, token, TimeSpan.FromSeconds(seconds));
+        _cache.Set(AccessTokenKey, token, TimeSpan.FromSeconds(seconds));
     }
 
     private async Task<JsonNode> RequestTokenAsync(Dictionary<string, string> form, CancellationToken ct)
@@ -738,7 +758,7 @@ public class GoogleCalendarService
 
         if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
         {
-            _cache.Remove(AccessTokenCacheKey);
+            _cache.Remove(AccessTokenKey);
             throw new GoogleException("Google ha rechazado el acceso. Vuelve a conectar la cuenta.", needsReconnect: true);
         }
         if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
@@ -775,14 +795,14 @@ public class GoogleCalendarService
         try { return JsonNode.Parse(body); } catch (System.Text.Json.JsonException) { return null; }
     }
 
-    private static string StateKey(string state) => "google-state:" + state;
-
-    /// <summary>Solo se vuelve a direcciones locales (evita redirecciones abiertas); si no, al cliente por defecto.</summary>
+    /// <summary>
+    /// Solo se vuelve a direcciones locales o a la web pública configurada (evita redirecciones abiertas);
+    /// si no, al cliente por defecto.
+    /// </summary>
     private string SafeReturnUrl(string? returnUrl, GoogleOAuthPurpose purpose)
     {
-        if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri)
-            && uri.Scheme is "http" or "https"
-            && uri.Host is "localhost" or "127.0.0.1" or "[::1]")
+        if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var uri) && uri.Scheme is "http" or "https"
+            && (uri.Host is "localhost" or "127.0.0.1" or "[::1]" || IsPublicClientHost(uri.Host)))
             return uri.GetLeftPart(UriPartial.Path);
 
         return _options.DefaultClientUrl.TrimEnd('/') + (purpose == GoogleOAuthPurpose.SignIn ? "/" : "/agenda");

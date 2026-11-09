@@ -19,6 +19,12 @@ public class AppUser
     /// <summary>Identificador estable ("sub") de su cuenta de Google, una vez vinculada.</summary>
     public string? GoogleSubject { get; set; }
 
+    /// <summary>
+    /// El correo está demostrado: la cuenta se creó o se vinculó con Google (que lo verifica). Una cuenta creada solo con
+    /// contraseña no lo está, así que al vincularle Google se borra esa contraseña (podría haberla puesto otra persona).
+    /// </summary>
+    public bool EmailVerified { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? LastLoginAt { get; set; }
 }

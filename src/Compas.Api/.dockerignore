@@ -1,0 +1,11 @@
+bin/
+obj/
+# Cliente antiguo con node_modules: el cliente real está en src/Compas.Server/ClientApp y va en Vercel
+ClientApp/
+*.db
+*.db-shm
+*.db-wal
+appsettings.Development.json
+appsettings.Production.json
+Dockerfile
+.dockerignore

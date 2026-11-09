@@ -17,8 +17,7 @@ export function LoginPage({
   onAuthenticated: (status: AuthStatusDto) => void;
 }) {
   const registrationOpen = info?.registrationOpen ?? false;
-  // Si todavía no hay ninguna cuenta, lo normal es crearla.
-  const [mode, setMode] = useState<Mode>(registrationOpen ? "register" : "login");
+  const [mode, setMode] = useState<Mode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -26,7 +25,6 @@ export function LoginPage({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Cuando se cierra la sesión o se crea la cuenta, la opción de «Crear cuenta» aparece o desaparece.
   const canRegister = registrationOpen;
   const effectiveMode: Mode = canRegister ? mode : "login";
 
@@ -79,7 +77,7 @@ export function LoginPage({
         <h1>{registering ? "Crea tu cuenta" : "Inicia sesión"}</h1>
         <p className="auth-sub">
           {registering
-            ? "Tu planificador personal. Esta será la cuenta propietaria de Compás."
+            ? "Cada cuenta tiene sus propios proyectos, tareas y agenda."
             : "Entra para ver tu plan, tus proyectos y tu agenda."}
         </p>
 
@@ -168,6 +166,10 @@ export function LoginPage({
             </button>
           </p>
         )}
+
+        <p className="auth-legal">
+          <a href="/privacidad.html">Política de privacidad</a>
+        </p>
       </div>
     </main>
   );

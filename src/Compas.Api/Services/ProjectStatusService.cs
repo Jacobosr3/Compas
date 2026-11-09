@@ -28,14 +28,18 @@ public class ProjectStatusService
 
     private async Task SyncCoreAsync(List<int>? ids, CancellationToken ct)
     {
-        var stats = await _db.WorkItems
+        // Al arrancar (ids == null) no hay sesión: se recorren los proyectos de todos los usuarios.
+        var allUsers = ids == null;
+        var items = allUsers ? _db.WorkItems.IgnoreQueryFilters() : _db.WorkItems;
+        var stats = await items
             .Where(w => w.ParentId == null && w.ProjectId != null && w.Status != WorkItemStatus.Cancelled
                         && (ids == null || ids.Contains(w.ProjectId.Value)))
             .GroupBy(w => w.ProjectId!.Value)
             .Select(g => new { ProjectId = g.Key, Total = g.Count(), Done = g.Count(w => w.Status == WorkItemStatus.Completed) })
             .ToDictionaryAsync(x => x.ProjectId, ct);
 
-        var projects = await _db.Projects.Where(p => ids == null || ids.Contains(p.Id)).ToListAsync(ct);
+        var projectSet = allUsers ? _db.Projects.IgnoreQueryFilters() : _db.Projects;
+        var projects = await projectSet.Where(p => ids == null || ids.Contains(p.Id)).ToListAsync(ct);
 
         foreach (var project in projects)
         {

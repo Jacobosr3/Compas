@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Política de privacidad · Compás</title>
+  <meta name="description" content="Política de privacidad de Compás, planificador personal." />
+  <style>
+    :root { --ink: #0a0a0a; --muted: #737373; --line: #e5e5e5; --bg: #f5f5f5; --paper: #ffffff; }
+    @media (prefers-color-scheme: dark) { :root { --ink: #fafafa; --muted: #a3a3a3; --line: #262626; --bg: #0a0a0a; --paper: #171717; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 720px; margin: 0 auto; padding: 40px 20px 64px; }
+    .card { background: var(--paper); border: 1px solid var(--line); border-radius: 24px; padding: 32px 28px; }
+    h1 { font-size: 28px; letter-spacing: -0.5px; margin: 0 0 4px; }
+    h2 { font-size: 18px; margin: 28px 0 6px; }
+    p, li { color: var(--ink); }
+    .muted { color: var(--muted); font-size: 14px; }
+    ul { padding-left: 20px; }
+    a { color: inherit; }
+    .brand { width: 40px; height: 40px; border-radius: 10px; background: #0a0a0a; color: #fafafa; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="card">
+      <div class="brand">C</div>
+      <h1>Política de privacidad</h1>
+      <p class="muted">Compás · última actualización: 9 de noviembre de 2026</p>
+
+      <p>
+        Compás es un planificador personal (proyectos, tareas y agenda) desarrollado y mantenido por Jacobo. Esta página
+        explica qué datos trata la aplicación, para qué y cómo puedes controlarlos. Está disponible en
+        <a href="https://compas-jacobo.vercel.app">compas-jacobo.vercel.app</a>.
+      </p>
+
+      <h2>Qué datos se tratan</h2>
+      <ul>
+        <li><strong>Cuenta:</strong> tu correo electrónico, tu nombre y, si te registras con contraseña, un hash de la contraseña (nunca la contraseña en claro). Si entras con Google, el identificador de tu cuenta de Google.</li>
+        <li><strong>Tus datos de planificación:</strong> los proyectos, tareas, eventos y planes que creas en la aplicación.</li>
+        <li><strong>Datos de Google Calendar</strong>, solo si conectas tu calendario: la lista de tus calendarios y sus eventos (título, fecha y hora, ubicación o notas).</li>
+        <li><strong>Sesión:</strong> una cookie técnica de inicio de sesión (<code>compas.auth</code>). No se usan cookies de seguimiento ni analítica ni publicidad.</li>
+      </ul>
+
+      <h2>Permisos de Google que se solicitan</h2>
+      <ul>
+        <li><code>openid</code> y <code>email</code>: iniciar sesión e identificar tu cuenta.</li>
+        <li><code>calendar.calendarlist.readonly</code>: mostrar tus calendarios para que elijas cuáles incluir.</li>
+        <li><code>calendar.events</code>: leer los eventos de los calendarios elegidos y crear, editar, mover o borrar eventos cuando tú lo haces desde la aplicación.</li>
+      </ul>
+      <p>
+        El uso que Compás hace de la información recibida de las API de Google se ajusta a la
+        <a href="https://developers.google.com/terms/api-services-user-data-policy" rel="noopener">Política de datos de usuario de los servicios de las API de Google</a>,
+        incluidos sus requisitos de uso limitado. Los datos de Google Calendar solo se usan para ofrecerte las funciones de
+        la aplicación: no se venden, no se transfieren a terceros, no se usan para publicidad y no se emplean para entrenar
+        modelos de inteligencia artificial.
+      </p>
+
+      <h2>Dónde se guardan y cómo se protegen</h2>
+      <ul>
+        <li>Los datos se guardan en una base de datos PostgreSQL alojada en Supabase (región de la Unión Europea, Fráncfort). La aplicación web y la API se alojan en Vercel.</li>
+        <li>El acceso a la base de datos solo lo hace la propia API; cada cuenta solo puede ver y modificar sus datos.</li>
+        <li>El token que permite sincronizar con Google se guarda cifrado. Las comunicaciones van por HTTPS.</li>
+      </ul>
+
+      <h2>Con quién se comparten</h2>
+      <p>
+        Con nadie. Solo intervienen los proveedores de alojamiento (Vercel y Supabase) como encargados del tratamiento
+        técnico, y Google, cuya API usa la aplicación a petición tuya.
+      </p>
+
+      <h2>Tus derechos y cómo borrar tus datos</h2>
+      <ul>
+        <li><strong>Desconectar Google Calendar:</strong> en la pantalla Agenda, «Desconectar» revoca el permiso en Google y borra los calendarios y los eventos importados de la aplicación.</li>
+        <li><strong>Revocar el acceso desde Google:</strong> en <a href="https://myaccount.google.com/permissions" rel="noopener">myaccount.google.com/permissions</a> puedes retirar el permiso de Compás en cualquier momento.</li>
+        <li><strong>Eliminar tu cuenta y tus datos, o acceder a ellos o corregirlos:</strong> pídelo al desarrollador a través del correo de contacto que figura en la pantalla de consentimiento de Google al iniciar sesión.</li>
+      </ul>
+
+      <h2>Cambios</h2>
+      <p>Si esta política cambia, se actualizará aquí con una nueva fecha.</p>
+
+      <p class="muted"><a href="/">Volver a Compás</a></p>
+    </div>
+  </main>
+</body>
+</html>

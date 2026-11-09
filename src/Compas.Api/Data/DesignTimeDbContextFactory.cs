@@ -30,6 +30,7 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<CompasDbCo
             optionsBuilder.UseSqlite(configuration.GetConnectionString("Sqlite"));
         }
 
-        return new CompasDbContext(optionsBuilder.Options);
+        // Sin petición HTTP: no hay usuario de sesión (solo se necesita el modelo para las migraciones).
+        return new CompasDbContext(optionsBuilder.Options, new Services.CurrentUser(new HttpContextAccessor()));
     }
 }

@@ -73,6 +73,10 @@ public class WorkItemsController : ControllerBase
         if (ValidateEstimate(dto.EstimatedHours, dto.EstimatedMinutes) is { } estimateError)
             return BadRequest(estimateError);
 
+        // El proyecto tiene que ser del propio usuario (los filtros de EF solo dejan ver los suyos).
+        if (dto.ProjectId is not null && !await _db.Projects.AnyAsync(p => p.Id == dto.ProjectId, ct))
+            return BadRequest("El proyecto no existe.");
+
         var totalMinutes = dto.EstimatedHours * 60 + dto.EstimatedMinutes;
 
         var item = new WorkItem
@@ -106,6 +110,9 @@ public class WorkItemsController : ControllerBase
             return BadRequest($"Estado no válido: {dto.Status}");
         if (ValidateEstimate(dto.EstimatedHours, dto.EstimatedMinutes) is { } estimateError)
             return BadRequest(estimateError);
+
+        if (dto.ProjectId is not null && !await _db.Projects.AnyAsync(p => p.Id == dto.ProjectId, ct))
+            return BadRequest("El proyecto no existe.");
 
         var previousProjectId = item.ProjectId;
 

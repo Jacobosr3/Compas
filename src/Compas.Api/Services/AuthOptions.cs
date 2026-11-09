@@ -3,11 +3,14 @@ namespace Compas.Api.Services;
 /// <summary>Configuración del inicio de sesión (sección "Auth" de appsettings o user-secrets).</summary>
 public class AuthOptions
 {
+    /// <summary>Cualquiera puede crear una cuenta (con correo y contraseña o con Google); cada cuenta tiene sus propios datos.</summary>
+    public bool AllowRegistration { get; set; } = true;
+
     /// <summary>
-    /// Correo del propietario. Si se indica, solo esa cuenta puede registrarse o entrar (con contraseña o con Google).
-    /// Si está vacío, el primer usuario que se registre pasa a ser el propietario y el registro se cierra.
+    /// Si se indica, solo estos correos pueden crear cuenta (útil para una instalación privada). Quien ya tiene cuenta
+    /// puede seguir entrando aunque no esté en la lista.
     /// </summary>
-    public string? OwnerEmail { get; set; }
+    public List<string> AllowedEmails { get; set; } = new();
 
     /// <summary>Días que dura la sesión de un dispositivo recordado (se renueva con el uso).</summary>
     public int RememberDays { get; set; } = 90;

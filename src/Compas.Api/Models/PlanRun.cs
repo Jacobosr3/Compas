@@ -6,9 +6,11 @@ namespace Compas.Api.Models;
 /// se crea un nuevo PlanRun, lo que permite comparar contra el anterior y detectar
 /// qué bloques se movieron.
 /// </summary>
-public class PlanRun
+public class PlanRun : IUserOwned
 {
     public int Id { get; set; }
+    /// <summary>Propietario del registro (ver <see cref="IUserOwned"/>).</summary>
+    public int UserId { get; set; }
     public DateOnly PlanDate { get; set; }
     public DateTime GeneratedAt { get; set; } = DateTime.UtcNow;
 

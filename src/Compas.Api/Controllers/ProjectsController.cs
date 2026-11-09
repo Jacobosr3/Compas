@@ -57,7 +57,7 @@ public class ProjectsController : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<IActionResult> Update(int id, UpdateProjectDto dto, CancellationToken ct)
     {
-        var project = await _db.Projects.FindAsync(new object?[] { id }, ct);
+        var project = await _db.Projects.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (project is null) return NotFound();
 
         if (!Enum.TryParse<ProjectStatus>(dto.Status, ignoreCase: true, out var status))
@@ -76,7 +76,7 @@ public class ProjectsController : ControllerBase
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete(int id, CancellationToken ct)
     {
-        var project = await _db.Projects.FindAsync(new object?[] { id }, ct);
+        var project = await _db.Projects.FirstOrDefaultAsync(x => x.Id == id, ct);
         if (project is null) return NotFound();
 
         _db.Projects.Remove(project);

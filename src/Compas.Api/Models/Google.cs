@@ -4,9 +4,11 @@ namespace Compas.Api.Models;
 /// Cuenta de Google conectada. Compás es de un solo usuario, así que solo hay una fila.
 /// El token de actualización se guarda cifrado (ASP.NET Data Protection), nunca en claro.
 /// </summary>
-public class GoogleAccount
+public class GoogleAccount : IUserOwned
 {
     public int Id { get; set; }
+    /// <summary>Propietario del registro (ver <see cref="IUserOwned"/>).</summary>
+    public int UserId { get; set; }
     public string Email { get; set; } = string.Empty;
 
     /// <summary>Token de actualización cifrado.</summary>
@@ -24,9 +26,11 @@ public class GoogleAccount
 }
 
 /// <summary>Un calendario de la cuenta de Google y si el usuario quiere incluirlo en Compás.</summary>
-public class GoogleCalendarSelection
+public class GoogleCalendarSelection : IUserOwned
 {
     public int Id { get; set; }
+    /// <summary>Propietario del registro (ver <see cref="IUserOwned"/>).</summary>
+    public int UserId { get; set; }
     public string CalendarId { get; set; } = string.Empty;
     public string Summary { get; set; } = string.Empty;
     public string? ColorHex { get; set; }

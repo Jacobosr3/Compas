@@ -43,7 +43,7 @@ public class AuthController : ControllerBase
         {
             var user = await _auth.RegisterAsync(dto.Email, dto.Password, dto.DisplayName, ct);
             await _auth.SignInAsync(HttpContext, user, dto.Remember);
-            return new AuthStatusDto(true, user.Email, user.DisplayName ?? user.Email, false, _google.IsConfigured);
+            return new AuthStatusDto(true, user.Email, user.DisplayName ?? user.Email, await _auth.IsRegistrationOpenAsync(ct), _google.IsConfigured);
         }
         catch (AuthException ex)
         {

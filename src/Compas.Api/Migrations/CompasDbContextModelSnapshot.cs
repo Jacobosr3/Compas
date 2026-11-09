@@ -35,6 +35,11 @@ namespace Compas.Api.Migrations
                         .HasMaxLength(320)
                         .HasColumnType("TEXT");
 
+                    b.Property<bool>("EmailVerified")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("GoogleSubject")
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
@@ -91,9 +96,14 @@ namespace Compas.Api.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("StartTime");
+
+                    b.HasIndex("UserId");
 
                     b.HasIndex("ExternalCalendarId", "ExternalId");
 
@@ -131,7 +141,12 @@ namespace Compas.Api.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("GoogleAccounts");
                 });
@@ -165,9 +180,12 @@ namespace Compas.Api.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("CalendarId")
+                    b.HasIndex("UserId", "CalendarId")
                         .IsUnique();
 
                     b.ToTable("GoogleCalendarSelections");
@@ -229,9 +247,14 @@ namespace Compas.Api.Migrations
                     b.Property<DateOnly>("PlanDate")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("PlanDate");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("PlanRuns");
                 });
@@ -263,7 +286,12 @@ namespace Compas.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Projects");
                 });
@@ -319,6 +347,9 @@ namespace Compas.Api.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DueDate");
@@ -329,7 +360,26 @@ namespace Compas.Api.Migrations
 
                     b.HasIndex("Status");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("WorkItems");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DataProtectionKeys");
                 });
 
             modelBuilder.Entity("Compas.Api.Models.PlanEntry", b =>

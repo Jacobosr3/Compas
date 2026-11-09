@@ -4,9 +4,11 @@ namespace Compas.Api.Models;
 /// Una tarea o unidad de trabajo. Se llama "WorkItem" (y no "Task") para no chocar
 /// con System.Threading.Tasks.Task en el resto del código.
 /// </summary>
-public class WorkItem
+public class WorkItem : IUserOwned
 {
     public int Id { get; set; }
+    /// <summary>Propietario del registro (ver <see cref="IUserOwned"/>).</summary>
+    public int UserId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
 

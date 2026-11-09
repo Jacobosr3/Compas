@@ -1,8 +1,10 @@
 namespace Compas.Api.Models;
 
-public class Project
+public class Project : IUserOwned
 {
     public int Id { get; set; }
+    /// <summary>Propietario del registro (ver <see cref="IUserOwned"/>).</summary>
+    public int UserId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string ColorHex { get; set; } = "#7C9EFF";

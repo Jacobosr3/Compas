@@ -6,9 +6,22 @@ using Compas.Api.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// En la nube (Vercel, Render, Cloud Run…) el puerto lo indica la variable PORT.
+if (Environment.GetEnvironmentVariable("PORT") is { Length: > 0 } port)
+    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
+// Detrás del proxy del proveedor: se respetan X-Forwarded-For/Proto/Host para saber el esquema (https) y la IP reales.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+    options.KnownNetworks.Clear(); // la API solo recibe tráfico a través del proveedor
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -46,7 +59,7 @@ builder.Services.AddScoped<ProjectStatusService>();
 // Integración con Google Calendar (credenciales en user-secrets: Google:ClientId / Google:ClientSecret).
 builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection("Google"));
 builder.Services.AddMemoryCache();
-builder.Services.AddDataProtection().SetApplicationName("Compas");
+builder.Services.AddDataProtection().SetApplicationName("Compas").PersistKeysToDbContext<CompasDbContext>();
 builder.Services.AddHttpClient("google", c => c.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddScoped<GoogleCalendarService>();
 
@@ -54,6 +67,8 @@ builder.Services.AddScoped<GoogleCalendarService>();
 // callback de Google (que llevan [AllowAnonymous]). Sin sesión la API responde 401 en vez de redirigir.
 builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection("Auth"));
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<CurrentUser>(); // el usuario de la sesión; CompasDbContext lo usa para filtrar los datos
 var authOptions = builder.Configuration.GetSection("Auth").Get<AuthOptions>() ?? new AuthOptions();
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -61,7 +76,8 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.Name = "compas.auth";
         options.Cookie.HttpOnly = true;
         options.Cookie.SameSite = SameSiteMode.Lax; // las peticiones desde otros sitios no llevan la cookie (frena CSRF)
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        // En producción la cookie solo viaja por https; en desarrollo (http://localhost) basta con seguir a la petición.
+        options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() ? CookieSecurePolicy.SameAsRequest : CookieSecurePolicy.Always;
         options.ExpireTimeSpan = TimeSpan.FromDays(authOptions.RememberDays);
         options.SlidingExpiration = true; // cada uso renueva la sesión: un dispositivo usado a menudo no vuelve a pedir la contraseña
         // La cookie solo vale mientras ese usuario exista (y con el mismo correo) en ESTA base de datos: una cookie de otra
@@ -136,15 +152,22 @@ catch (Exception ex)
     app.Logger.LogWarning(ex, "No se pudo sincronizar el estado de los proyectos al arrancar.");
 }
 
-app.UseSwagger();
-app.UseSwaggerUI(options =>
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Compás API v1"));
+app.UseForwardedHeaders();
+
+// La documentación de la API solo en desarrollo: en producción no se publica el esquema.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Compás API v1"));
+}
 
 app.UseCors("DefaultClient");
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapGet("/healthz", () => Results.Ok("ok")).AllowAnonymous(); // comprobación de salud para el proveedor
 
 if (app.Environment.IsDevelopment())
 {
@@ -167,8 +190,9 @@ if (app.Environment.IsDevelopment())
         }
     }).AllowAnonymous(); // la página debe cargar sin sesión: es la que muestra el inicio de sesión
 }
-else
+else if (app.Environment.WebRootPath is not null && Directory.Exists(app.Environment.WebRootPath))
 {
+    // Solo si la API sirve también el cliente compilado (wwwroot); con el cliente en Vercel no hace falta.
     app.UseDefaultFiles();
     app.UseStaticFiles();
     app.MapFallbackToFile("index.html").AllowAnonymous();

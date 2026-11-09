@@ -7,7 +7,15 @@ builder.Logging.AddFilter(
 
 builder.Services.AddHttpClient("vite", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:5174");
+    // Dirección del servidor de Vite (configurable con "Vite:Url"; por defecto el puerto de desarrollo habitual).
+    client.BaseAddress = new Uri(builder.Configuration["Vite:Url"] ?? "http://localhost:5174");
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    // Es un proxy transparente: las cookies son del navegador, no del servidor (con el contenedor por defecto, las
+    // cookies de sesión de un usuario se guardarían aquí y se enviarían en las peticiones de todos), y las
+    // redirecciones las sigue el navegador, no el proxy.
+    UseCookies = false,
+    AllowAutoRedirect = false
 });
 
 var app = builder.Build();
@@ -55,10 +63,12 @@ if (app.Environment.IsDevelopment())
 
             ctx.Response.StatusCode = (int)response.StatusCode;
 
-            if (response.Content.Headers.ContentType != null)
+            // Se devuelven las cabeceras de la respuesta (Set-Cookie para iniciar y cerrar sesión, Location en las
+            // redirecciones, Content-Type...) salvo las propias de cada conexión.
+            foreach (var header in response.Headers.Concat(response.Content.Headers))
             {
-                ctx.Response.ContentType =
-                    response.Content.Headers.ContentType.ToString();
+                if (SkippedResponseHeaders.Contains(header.Key)) continue;
+                ctx.Response.Headers[header.Key] = header.Value.ToArray();
             }
 
             await response.Content.CopyToAsync(ctx.Response.Body);
@@ -80,3 +90,12 @@ else
 }
 
 app.Run();
+
+static partial class Program
+{
+    // Cabeceras que describen la conexión con Vite, no la respuesta: Kestrel pone las suyas.
+    static readonly HashSet<string> SkippedResponseHeaders = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Transfer-Encoding", "Connection", "Keep-Alive", "Proxy-Connection", "Upgrade", "Content-Length"
+    };
+}
