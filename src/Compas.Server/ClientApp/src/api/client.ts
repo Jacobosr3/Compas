@@ -47,6 +47,4 @@ export const api = {
   delete: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
 
-// Función vacía para mantener compatibilidad con Topbar (ya no hace falta configurar nada)
 export function getApiBase(): string { return "http://localhost:5080"; }
-export function setApiBase(_url: string): void { /* no-op */ }
