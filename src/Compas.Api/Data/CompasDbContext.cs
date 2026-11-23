@@ -25,6 +25,8 @@ public class CompasDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<GoogleAccount> GoogleAccounts => Set<GoogleAccount>();
     public DbSet<GoogleCalendarSelection> GoogleCalendarSelections => Set<GoogleCalendarSelection>();
     public DbSet<AppUser> Users => Set<AppUser>();
+    public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
+    public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
 
     /// <summary>Claves de Data Protection (ver Program.cs): no pertenecen a ningún usuario.</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -39,6 +41,26 @@ public class CompasDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<PlanEntry>().HasQueryFilter(x => x.PlanRun!.UserId == CurrentUserId);
         modelBuilder.Entity<GoogleAccount>().HasQueryFilter(x => x.UserId == CurrentUserId);
         modelBuilder.Entity<GoogleCalendarSelection>().HasQueryFilter(x => x.UserId == CurrentUserId);
+
+        modelBuilder.Entity<WorkoutSession>().HasQueryFilter(x => x.UserId == CurrentUserId);
+        modelBuilder.Entity<ApiToken>().HasQueryFilter(x => x.UserId == CurrentUserId);
+
+        modelBuilder.Entity<WorkoutSession>(e =>
+        {
+            e.HasIndex(w => new { w.UserId, w.Date });
+            e.HasIndex(w => new { w.UserId, w.Source, w.ExternalId });
+            e.Property(w => w.Title).IsRequired().HasMaxLength(200);
+            e.Property(w => w.Source).HasMaxLength(50);
+            e.Property(w => w.ExternalId).HasMaxLength(200);
+        });
+
+        modelBuilder.Entity<ApiToken>(e =>
+        {
+            e.HasIndex(t => t.TokenHash).IsUnique();
+            e.Property(t => t.Name).IsRequired().HasMaxLength(100);
+            e.Property(t => t.TokenHash).IsRequired().HasMaxLength(64);
+            e.Property(t => t.Prefix).IsRequired().HasMaxLength(12);
+        });
 
         modelBuilder.Entity<Project>(e =>
         {

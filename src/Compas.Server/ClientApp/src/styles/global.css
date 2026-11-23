@@ -2519,3 +2519,22 @@
 .auth-legal a {
   color: inherit;
 }
+
+/* ---- Entrenos y conector MCP ---- */
+.workout-list { display: grid; gap: 12px; margin-bottom: 20px; }
+.workout-card header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.workout-card header h3 { margin: 0; }
+.workout-card small, .connector-list small { color: var(--muted); display: block; }
+.workout-card.done { opacity: 0.6; }
+.workout-check { display: flex; align-items: center; gap: 6px; font-size: 14px; white-space: nowrap; }
+.workout-ex { margin-top: 12px; }
+.workout-ex small { display: inline; }
+.workout-ex ol { margin: 4px 0 0; padding-left: 22px; font-variant-numeric: tabular-nums; }
+.connector-card { margin-top: 8px; }
+.connector-help { color: var(--muted); font-size: 14px; margin: 6px 0 12px; }
+.connector-error { color: var(--danger); font-size: 14px; }
+.connector-new { display: grid; gap: 8px; padding: 12px; margin-bottom: 12px; border: 1px solid var(--line); border-radius: var(--radius-nested); }
+.connector-new input, .connector-create input { width: 100%; min-width: 0; }
+.connector-create { display: flex; gap: 8px; margin-bottom: 12px; }
+.connector-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.connector-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; }

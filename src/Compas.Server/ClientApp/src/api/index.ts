@@ -13,6 +13,9 @@ import type {
   SubtaskDto,
   GoogleStatusDto,
   AuthStatusDto,
+  WorkoutSessionDto,
+  ApiTokenDto,
+  CreatedApiTokenDto,
 } from "./types";
 
 export const authApi = {
@@ -108,4 +111,23 @@ export const plannerApi = {
   week: (projectIds?: number[]) => api.post<DailyPlanDto>(`/api/planner/week${plannerQuery(undefined, projectIds)}`),
   reorder: (workItemIds: number[], minutes?: number, projectIds?: number[]) =>
     api.post<DailyPlanDto>(`/api/planner/reorder${plannerQuery(minutes, projectIds)}`, { workItemIds }),
+};
+
+export const workoutsApi = {
+  list: (from?: string, to?: string) => {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    const qs = params.toString();
+    return api.get<WorkoutSessionDto[]>(`/api/workouts${qs ? `?${qs}` : ""}`);
+  },
+  setCompleted: (id: number, completed: boolean) => api.put<void>(`/api/workouts/${id}/completed`, { completed }),
+  remove: (id: number) => api.delete<void>(`/api/workouts/${id}`),
+};
+
+/** Tokens personales del conector MCP con el que una automatización de Claude escribe en Compás. */
+export const tokensApi = {
+  list: () => api.get<ApiTokenDto[]>("/api/tokens"),
+  create: (name: string) => api.post<CreatedApiTokenDto>("/api/tokens", { name }),
+  revoke: (id: number) => api.delete<void>(`/api/tokens/${id}`),
 };

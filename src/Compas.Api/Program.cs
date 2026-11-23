@@ -55,6 +55,8 @@ builder.Services.AddDbContext<CompasDbContext>(options =>
 builder.Services.AddScoped<IPlanningEngine, HeuristicPlanningEngine>();
 builder.Services.AddScoped<PlannerService>();
 builder.Services.AddScoped<ProjectStatusService>();
+builder.Services.AddScoped<WorkoutService>();
+builder.Services.AddScoped<ApiTokenService>(); // tokens personales del conector MCP (/mcp)
 
 // Integración con Google Calendar (credenciales en user-secrets: Google:ClientId / Google:ClientSecret).
 builder.Services.Configure<GoogleOptions>(builder.Configuration.GetSection("Google"));
@@ -113,6 +115,10 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("auth", ctx => RateLimitPartition.GetFixedWindowLimiter(
         ctx.Connection.RemoteIpAddress?.ToString() ?? "desconocida",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    // Conector MCP: por dirección; holgado para una automatización, pero frena el tanteo de tokens.
+    options.AddPolicy("mcp", ctx => RateLimitPartition.GetFixedWindowLimiter(
+        ctx.Connection.RemoteIpAddress?.ToString() ?? "desconocida",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 120, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     options.AddPolicy("oauth", ctx => RateLimitPartition.GetFixedWindowLimiter(
         ctx.Connection.RemoteIpAddress?.ToString() ?? "desconocida",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));

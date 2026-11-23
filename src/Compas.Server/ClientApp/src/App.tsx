@@ -8,6 +8,7 @@ import { ProjectsPage } from "./pages/ProjectsPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { AgendaPage } from "./pages/AgendaPage";
 import { BandejaPage } from "./pages/BandejaPage";
+import { WorkoutsPage } from "./pages/WorkoutsPage";
 
 export default function App() {
   return (
@@ -50,6 +51,7 @@ function AuthGate() {
           <Route path="/proyectos/:id" element={<ProjectDetailPage />} />
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/bandeja" element={<BandejaPage />} />
+          <Route path="/entrenos" element={<WorkoutsPage />} />
         </Routes>
       </div>
     </BrowserRouter>

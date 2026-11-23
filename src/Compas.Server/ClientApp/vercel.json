@@ -2,6 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
     { "source": "/api/:path*", "destination": "https://compas-jacobo-api.vercel.app/api/:path*" },
+    { "source": "/mcp", "destination": "https://compas-jacobo-api.vercel.app/mcp" },
+    { "source": "/mcp/:path*", "destination": "https://compas-jacobo-api.vercel.app/mcp/:path*" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

@@ -42,6 +42,15 @@ const items = [
       </svg>
     ),
   },
+  {
+    to: "/entrenos",
+    label: "Entrenos",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12" />
+      </svg>
+    ),
+  },
 ];
 
 export function Sidebar() {

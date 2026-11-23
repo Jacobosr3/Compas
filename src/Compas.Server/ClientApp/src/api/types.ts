@@ -165,3 +165,42 @@ export interface DailyPlanDto {
   entries: PlanEntryDto[];
   nowEntry: PlanEntryDto | null;
 }
+
+export interface WorkoutSetDto {
+  type: string;
+  weightKg: number | null;
+  reps: number | null;
+}
+
+export interface WorkoutExerciseDto {
+  name: string;
+  notes: string | null;
+  sets: WorkoutSetDto[];
+}
+
+export interface WorkoutSessionDto {
+  id: number;
+  title: string;
+  /** Día en formato yyyy-MM-dd. */
+  date: string;
+  notes: string | null;
+  completed: boolean;
+  source: string | null;
+  externalId: string | null;
+  exercises: WorkoutExerciseDto[];
+}
+
+export interface ApiTokenDto {
+  id: number;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+export interface CreatedApiTokenDto {
+  token: ApiTokenDto;
+  /** Token en claro: solo se recibe al crearlo. */
+  value: string;
+  mcpUrl: string;
+}
