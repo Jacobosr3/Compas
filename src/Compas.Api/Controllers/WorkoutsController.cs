@@ -46,6 +46,11 @@ public class WorkoutsController : ControllerBase
     [HttpPost("tokens")]
     public async Task<CreatedApiTokenDto> CreateToken(CreateApiTokenRequest request, CancellationToken ct)
     {
+        if (string.Equals(request.Kind, "quick", StringComparison.OrdinalIgnoreCase))
+        {
+            var (qdto, qvalue) = await _tokens.CreateAsync(request.Name, ct, ApiTokenService.QuickPrefix);
+            return new CreatedApiTokenDto(qdto, qvalue, string.Empty, $"{Request.Scheme}://{Request.Host}/api/quick/meal");
+        }
         var (dto, value) = await _tokens.CreateAsync(request.Name, ct);
         return new CreatedApiTokenDto(dto, value, $"{Request.Scheme}://{Request.Host}/mcp/{value}");
     }

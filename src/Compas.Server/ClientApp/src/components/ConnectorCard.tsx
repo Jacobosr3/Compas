@@ -14,6 +14,8 @@ export function ConnectorCard() {
   const [created, setCreated] = useState<CreatedApiTokenDto | null>(null);
   const [copied, setCopied] = useState(false);
   const [revoking, setRevoking] = useState<number | null>(null);
+  const [quick, setQuick] = useState<CreatedApiTokenDto | null>(null);
+  const [quickCopied, setQuickCopied] = useState<string | null>(null);
 
   async function create() {
     setBusy(true);
@@ -26,6 +28,29 @@ export function ConnectorCard() {
       setError(errorText(err));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function createQuick() {
+    setBusy(true);
+    setError(null);
+    try {
+      setQuick(await tokensApi.createQuick("Atajo de comida"));
+      setQuickCopied(null);
+      tokens.reload();
+    } catch (err) {
+      setError(errorText(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function copyQuick(label: string, text: string) {
+    try {
+      await navigator.clipboard.writeText(text);
+      setQuickCopied(label);
+    } catch {
+      setError("No se pudo copiar; selecciona el texto y cópialo a mano.");
     }
   }
 
@@ -76,6 +101,39 @@ export function ConnectorCard() {
         <input value={name} maxLength={100} onChange={(e) => setName(e.target.value)} aria-label="Nombre del token" />
         <button className="btn-secondary" disabled={busy} onClick={create}>
           {busy ? "Creando…" : "Crear token"}
+        </button>
+      </div>
+
+      <h3>Atajo de comida (iPhone)</h3>
+      <p className="connector-help">
+        Crea un token solo para subir fotos de comidas desde un atajo del móvil: no sirve para el conector de Claude ni
+        para leer tus datos. La foto queda pendiente en Comidas y se estima en la siguiente pasada de la automatización.
+      </p>
+
+      {quick && quick.quickMealUrl && (
+        <div className="connector-new">
+          <strong>Datos para el atajo (el token solo se muestra ahora)</strong>
+          <label className="connector-help" htmlFor="quick-url">Dirección (URL)</label>
+          <input id="quick-url" readOnly value={quick.quickMealUrl} onFocus={(e) => e.currentTarget.select()} />
+          <label className="connector-help" htmlFor="quick-auth">Cabecera Authorization</label>
+          <input id="quick-auth" readOnly value={`Bearer ${quick.value}`} onFocus={(e) => e.currentTarget.select()} />
+          <div className="actions-inline">
+            <button className="btn-primary" onClick={() => copyQuick("url", quick.quickMealUrl!)}>
+              {quickCopied === "url" ? "URL copiada" : "Copiar URL"}
+            </button>
+            <button className="btn-primary" onClick={() => copyQuick("auth", `Bearer ${quick.value}`)}>
+              {quickCopied === "auth" ? "Cabecera copiada" : "Copiar cabecera"}
+            </button>
+            <button className="btn-ghost" onClick={() => setQuick(null)}>
+              Ocultar
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="connector-create">
+        <button className="btn-secondary" disabled={busy} onClick={createQuick}>
+          {busy ? "Creando…" : "Crear token del atajo"}
         </button>
       </div>
 

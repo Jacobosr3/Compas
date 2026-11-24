@@ -144,6 +144,8 @@ export const workoutsApi = {
 export const tokensApi = {
   list: () => api.get<ApiTokenDto[]>("/api/tokens"),
   create: (name: string) => api.post<CreatedApiTokenDto>("/api/tokens", { name }),
+  /** Token de captura rápida (atajo del móvil): solo permite subir comidas con foto. */
+  createQuick: (name: string) => api.post<CreatedApiTokenDto>("/api/tokens", { name, kind: "quick" }),
   revoke: (id: number) => api.delete<void>(`/api/tokens/${id}`),
 };
 

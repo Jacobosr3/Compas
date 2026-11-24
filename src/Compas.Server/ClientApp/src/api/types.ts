@@ -206,6 +206,8 @@ export interface CreatedApiTokenDto {
   /** Token en claro: solo se recibe al crearlo. */
   value: string;
   mcpUrl: string;
+  /** Solo en los tokens de captura rápida: dirección a la que el atajo envía la foto. */
+  quickMealUrl?: string | null;
 }
 
 export type NutritionPhase = "Bulk" | "Maintenance" | "Cut";

@@ -17,7 +17,8 @@ public record WorkoutCompletedDto(bool Completed);
 
 public record ApiTokenDto(int Id, string Name, string Prefix, DateTime CreatedAt, DateTime? LastUsedAt);
 
-public record CreateApiTokenRequest(string? Name);
+/// <summary>Kind: "quick" crea un token de captura rápida (solo sube comidas); cualquier otro valor, el del conector MCP.</summary>
+public record CreateApiTokenRequest(string? Name, string? Kind = null);
 
 /// <summary>Respuesta de crear un token: el valor en claro solo aparece aquí.</summary>
-public record CreatedApiTokenDto(ApiTokenDto Token, string Value, string McpUrl);
+public record CreatedApiTokenDto(ApiTokenDto Token, string Value, string McpUrl, string? QuickMealUrl = null);
