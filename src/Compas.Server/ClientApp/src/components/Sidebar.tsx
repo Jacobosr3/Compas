@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { PROFILE_SECTION_PATHS } from "./profileSection";
 import { useAuth } from "../hooks/useAuth";
@@ -60,18 +60,30 @@ export function Sidebar() {
   const { pathname } = useLocation();
   const [confirmingLogout, setConfirmingLogout] = useState(false);
 
+  // Misma regla que NavLink (con `end` solo en "/"), calculada aquí para
+  // poder colocar el indicador deslizante bajo la pestaña activa.
+  const activeIndex = items.findIndex((item) =>
+    item.to === "/perfil"
+      ? PROFILE_SECTION_PATHS.includes(pathname)
+      : item.to === "/"
+        ? pathname === "/"
+        : pathname === item.to || pathname.startsWith(item.to + "/"),
+  );
+
   return (
     <aside className="rail-left">
+      <span className="rail-aura" aria-hidden="true" />
       <div className="brand">C</div>
-      <nav className="nav">
-        {items.map((item) => (
+      <nav className="nav" style={{ "--count": items.length } as CSSProperties}>
+        {activeIndex >= 0 && (
+          <span className="nav-indicator" aria-hidden="true" style={{ "--idx": activeIndex } as CSSProperties} />
+        )}
+        {items.map((item, i) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.to === "/"}
-            className={({ isActive }) =>
-              "nav-item" + ((item.to === "/perfil" ? PROFILE_SECTION_PATHS.includes(pathname) : isActive) ? " active" : "")
-            }
+            className={"nav-item" + (i === activeIndex ? " active" : "")}
           >
             <span className="i">{item.icon}</span>
             <span>{item.label}</span>

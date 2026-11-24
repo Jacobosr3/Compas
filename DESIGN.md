@@ -1,17 +1,17 @@
 # Ui — Style Reference
-> frosted glass panels floating over warm ambient light
+> frosted glass HUD floating over a drifting neon aurora
 
-**Theme:** dark (glass)
+**Theme:** dark (futuristic glass) · **Primary target:** mobile (most use is on the phone)
 
 Source of truth: `src/Compas.Server/ClientApp/src/styles/tokens.css` (tokens) and `styles/global.css` (components). If this document and the code disagree, the code wins — update this file.
 
-Compás is a dark, glassmorphic workspace: a near-black backdrop lit by soft, blurred pools of warm amber, blue and violet light, with translucent smoked-glass cards floating on top. Every container blurs and saturates what is behind it, so the ambient light bleeds through the UI and gives it depth. The interface stays almost achromatic — light text, translucent surfaces, hairline white borders — with a single electric blue accent for progress and focus, a green for "connected" status, and a red reserved for destructive states. Typography keeps Geist's geometric neutrality with tight tracking on display sizes; the result reads like a calm, premium dashboard rather than a colourful consumer app.
+Compás is a dark, futuristic glass workspace designed mobile-first: a near-black backdrop with a slowly drifting aurora (cyan, violet, a touch of amber) and a faint HUD grid, with translucent smoked-glass cards floating on top. Every container blurs and saturates what is behind it, so the ambient light bleeds through the UI and gives it depth. The interface stays almost achromatic — light text, translucent surfaces, hairline white borders — with a cyan→indigo→violet neon accent for progress, focus and the active tab, a green for "connected" status, and a red reserved for destructive states. Typography keeps Geist for the interface and adds Geist Mono for HUD-style labels. Navigation is a floating glass dock on the phone (left rail on desktop) that feels alive: a light pill slides with a spring to the active tab and gently breathes, an energy line flows along its edge and a colour halo drifts inside it.
 
 ## Tokens — Colors
 
 | Name | Value | Token | Role |
 |------|-------|-------|------|
-| Backdrop | `#0b0d12` | `--color-backdrop` | Page background base, opaque overlays (`--bg`), under the ambient light layer |
+| Backdrop | `#07080d` | `--color-backdrop` | Page background base, opaque overlays (`--bg`), under the ambient light layer |
 | Glass | `rgba(28, 30, 38, 0.55)` | `--color-paper` | Card surfaces, active nav item, active tabs (always with backdrop blur) |
 | Glass Fill | `rgba(255, 255, 255, 0.06)` | `--color-canvas` | Inputs, secondary buttons, chips, tags, hover fills, progress track |
 | Deep | `#0f1117` | `--color-surface-alt` | Text/icons on light fills (primary button, solid badges), opaque dark hover surfaces |
@@ -19,22 +19,18 @@ Compás is a dark, glassmorphic workspace: a near-black backdrop lit by soft, bl
 | Ink Soft | `#e4e4e8` | `--color-ink-soft` | Solid badge fill, primary button hover, secondary light text |
 | Mid Gray | `#9b9ca6` | `--color-mid-gray` | Muted body text, placeholders, helper labels, icons at rest |
 | Hairline | `rgba(255, 255, 255, 0.12)` | `--color-hairline` | Borders, card edges, dividers, ring track |
-| Accent | `#5b8cff` | `--color-accent` | Progress bars, Today progress ring, focus outlines and focus rings. The only chromatic accent |
+| Accent | `#38bdf8` | `--color-accent` | Today progress ring, focus outlines/rings, active nav icon |
+| Accent 2 | `#a855f7` | `--color-accent-2` | End of the neon gradient |
+| Neon gradient | `linear-gradient(135deg, #22d3ee, #6366f1 55%, #a855f7)` | `--gradient-accent` | Progress bars, "Now" card border, nav light bar, logo ring |
 | OK | `#34d399` | `--color-ok` | "Connected" status dot (with a soft glow) |
 | Ember | `#ff5a5f` | `--color-ember` | Destructive actions and errors only |
 
-### Ambient light (`body::before`)
+### Aurora and grid (`body::before` / `body::after`)
 
-A fixed, non-interactive layer behind everything:
+- **Aurora (`body::before`):** fixed layer 25% larger than the viewport with radial pools — cyan top-right, amber top-left (faint), violet bottom — over `#0c0e16 → #07080d`. It drifts with `aurora-drift` (32s, transform only).
+- **HUD grid (`body::after`):** 1px white lines at 3.5% every 44px, masked with a radial fade so it only shows near the top.
 
-```css
-radial-gradient(1100px 700px at 10% -10%, rgba(255, 168, 92, 0.26), transparent 60%),  /* warm amber, top-left */
-radial-gradient(900px 650px at 100% 5%,   rgba(91, 140, 255, 0.24), transparent 60%),  /* blue, top-right */
-radial-gradient(1000px 800px at 55% 115%, rgba(168, 96, 255, 0.16), transparent 60%),  /* violet, bottom */
-linear-gradient(180deg, #11131a 0%, #0b0d12 100%);
-```
-
-It is the only place where large gradients are allowed. It must stay subtle: it tints the glass, it is never content.
+These are the only large gradients allowed. They tint the glass; they are never content.
 
 ## Tokens — Typography
 
@@ -46,6 +42,12 @@ It is the only place where large gradients are allowed. It must stay subtle: it 
 - **Letter spacing:** -0.0500em at display (48px), -0.0250em at subheading (24–30px), 0.0500em at caption (12px uppercase).
 - **OpenType features:** `"ss01" on, "cv11" on`
 - **Rendering:** `-webkit-font-smoothing: antialiased` — important for light text on dark backgrounds.
+
+### Geist Mono — HUD labels · `--font-mono`
+Eyebrows (`.now-eyebrow`), stat labels (`.stat-lbl`, uppercase, 0.08em) and page subtitles (`.topbar .date`, 12.5px, sentence case). Never for body text or long paragraphs.
+
+### Gradient text
+Page titles (`.topbar h1`: white → `#a5f3fc`) and stat numbers (`.stat-num`: white → `#93c5fd`) use `background-clip: text`.
 
 ### Type Scale
 
@@ -93,13 +95,15 @@ It is the only place where large gradients are allowed. It must stay subtle: it 
 
 | Name | Value | Token |
 |------|-------|-------|
-| card | `inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.3)` | `--shadow-card` |
+| card | `inset 0 1px 0 rgba(125,211,252,0.14), 0 8px 32px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.3)` | `--shadow-card` |
+| card hover glow | `--shadow-card` + `0 0 28px rgba(56,189,248,0.08)`, border `rgba(125,211,252,0.28)` | — |
+| neon glow | `0 0 18px rgba(56,189,248,0.45)` | `--glow-accent` |
 | card hover (clickable rows) | `inset 0 1px 0 rgba(255,255,255,0.1), 0 12px 36px rgba(0,0,0,0.45)` | — |
 | primary button | `0 4px 16px rgba(0,0,0,0.35)` | — |
-| focus ring | `0 0 0 3px rgba(91,140,255,0.25)` | — |
-| glass blur | `blur(22px) saturate(150%)` | `--glass-blur` |
+| focus ring | `0 0 0 3px rgba(56,189,248,0.25)` | — |
+| glass blur | `blur(22px) saturate(160%)`; `blur(14px) saturate(150%)` at ≤720px | `--glass-blur` |
 
-The inset 1px white highlight on the top edge is what sells the "glass" — it mimics light catching the bevel of the pane.
+The inset 1px cyan-tinted highlight on the top edge is what sells the "glass" — it mimics light catching the bevel of the pane.
 
 ### Layout
 
@@ -107,7 +111,8 @@ The inset 1px white highlight on the top edge is what sells the "glass" — it m
 - **Section gap:** 48-80px
 - **Card padding:** 20px
 - **Element gap:** 8px
-- **Shell:** 88px left rail + fluid main column; below 720px the rail becomes a fixed glass bottom bar.
+- **Shell:** 88px left rail + fluid main column; below 720px the rail becomes a floating glass dock (12px from the sides, 10px + safe area from the bottom, radius 26px). Main bottom padding: `100px + safe area`.
+- **Mobile first:** design and check at 390px wide first. Touch targets ≥ 44px; no horizontal overflow (single-column grids use `minmax(0, 1fr)`, not `1fr`).
 
 ## Components
 
@@ -141,15 +146,20 @@ Background `rgba(28,30,38,0.55)`, 1px hairline border (`rgba(255,255,255,0.12)`)
 
 Overlay `rgba(0,0,0,0.5)` with `blur(6px)`. Panel is more opaque than cards — `rgba(22,24,31,0.88)` — so text stays legible over busy content; same border, radius and shadow as cards.
 
-### Sidebar / Bottom Bar
-**Role:** Main navigation
+### Navigation — Rail (desktop) / Dock (mobile)
+**Role:** Main navigation; it should feel alive
 
-Background `rgba(15,17,23,0.45)` with glass blur and a 1px hairline right border. Active item: glass card surface + card shadow + ink text; inactive: mid-gray, hover glass fill. Brand mark: 40px ink square with deep "C".
+- **Surface:** `rgba(15,17,23,0.45)` + glass blur, hairline border; `overflow: hidden; isolation: isolate`.
+- **Sliding indicator (`.nav-indicator`):** a single element per nav, positioned from `--idx` (active tab index, computed in `Sidebar.tsx`) and `--count`. Neon-tinted glass pill with a cyan inner ring; moves with `transform` and a spring (`cubic-bezier(0.34, 1.4, 0.5, 1)`, 0.55s). Its `::after` glow breathes (`breathe`, 3.2s, opacity only); its `::before` is a 3px neon light bar on the outer edge (left on desktop, top on mobile).
+- **Energy line (`.rail-left::before`):** 1px neon gradient flowing along the edge (right on desktop, top on mobile) with `flow-y` / `flow-x`, 6–7s, transform only.
+- **Aura (`.rail-aura`):** soft cyan/violet halo drifting inside the bar (`aura-y` / `aura-x`, 11–12s).
+- **Items:** inactive mid-gray; active white label, icon `#7dd3fc` with neon drop-shadow and a spring `icon-pop` when it becomes active; pressing scales the icon to 0.86. Mobile labels 10.5px.
+- **Brand (desktop):** 40px ink square with deep "C", cyan glow and a rotating conic neon ring (`@property --spin`, 4s).
 
 ### Input Field
 **Role:** Text entry, search, form controls
 
-Glass fill background, ink text, mid-gray placeholder, radius 18px. Focus: accent focus ring `0 0 0 3px rgba(91,140,255,0.25)`. Native controls render dark thanks to `color-scheme: dark`.
+Glass fill background, ink text, mid-gray placeholder, radius 18px. Focus: accent focus ring `0 0 0 3px rgba(56,189,248,0.25)`. Native controls render dark thanks to `color-scheme: dark`.
 
 ### Badges
 - **Solid:** background `#e4e4e8`, text `#0f1117`, radius 18px, padding 2px 8px, 12px/500. Used for flags and high/urgent priority.
@@ -157,11 +167,25 @@ Glass fill background, ink text, mid-gray placeholder, radius 18px. Focus: accen
 - **Outline:** transparent with hairline border.
 
 ### Status Pill
-Glass surface, hairline border, 12px/500 muted text, with a 7px dot: green `#34d399` with glow when connected, ember on error, hairline while loading.
+Glass surface, hairline border, 12px/500 muted text, with a 7px dot: green `#34d399` with a breathing glow when connected, ember on error, hairline while loading.
+
+### "Now" card
+Glass card with a 1px neon gradient border (masked `::before`, 75% opacity) and an extra `0 0 40px rgba(56,189,248,0.1)` glow. The hero of the Today screen.
 
 ### Progress
-- **Bar:** 6px track in glass fill; fill is a `#3b6dff → #5b8cff` gradient with `0 0 10px rgba(91,140,255,0.5)` glow.
+- **Bar:** 6px track in glass fill; fill is `--gradient-accent` with `0 0 10px rgba(56,189,248,0.5)` glow.
 - **Ring (Today):** hairline track, accent stroke, round caps.
+
+### Hover — "about to press" (mouse/trackpad only)
+**Role:** Tell desktop users what is clickable before they click
+
+Lives in `@media (hover: hover) and (pointer: fine)`, so touch screens never get a stuck hover. Every rule excludes `:active`, so the existing press feedback (`scale(0.97)` on buttons, `0.86` on nav icons) always wins while clicking.
+- **Buttons:** lift `translateY(-2px)` with a spring (`cubic-bezier(0.2, 0.8, 0.2, 1)`, 0.22s), cyan inner ring + soft neon glow; primary/secondary also get a light sheen sweeping across (0.7s). Destructive buttons glow red.
+- **Nav items:** faint cyan tint and ring; icon lifts and scales to 1.1 with a neon drop-shadow.
+- **Clickable rows and cards** (`.record-row.clickable`, `.board-card`): lift 3px, neon border `rgba(125,211,252,0.5)`, deeper shadow + glow. Tabs and tag buttons lift 1px.
+- **Borderless list rows** (`.proj-row`, `.inbox-row.clickable`, `.mini-week`): slide 3px right and/or a cyan tint with a 2px cyan left edge.
+- **Draggable blocks** (timeline blocks, calendar events): glow only, never moved, so dragging is not disturbed.
+- Informational cards (`.card`, `.stat`) only brighten their border — they do not lift, because they are not clickable.
 
 ### Stat Block
 Label 12–14px mid-gray, value 30–48px weight 600 ink with tight tracking. Relies on type scale; sits inside a glass card.
@@ -172,7 +196,9 @@ Label 12–14px mid-gray, value 30–48px weight 600 ink with tight tracking. Re
 - Put every container on glass: translucent paper + hairline border + `--glass-blur` + `--shadow-card`.
 - Keep the ambient light layer as the only large gradient; let it show through the glass.
 - Use `#f4f4f6` pills with dark text for primary actions — they must be the brightest element on screen.
-- Use `#5b8cff` only for progress, focus and the current/selected state indicators.
+- Use the neon accent only for progress, focus and the current/selected state.
+- Animate only `transform` and `opacity` (or tiny elements); keep loops slow (≥3s) so the UI feels alive, not busy. Everything must still work with `prefers-reduced-motion` (a global rule disables motion).
+- Check every change at phone width first.
 - Reserve `#ff5a5f` exclusively for destructive actions and errors.
 - Make overlays (modals, popovers over content) more opaque than cards so they stay readable.
 - Use colour tokens, never literals — in TSX/SVG too (`style={{ stroke: "var(--color-accent)" }}`).
@@ -183,14 +209,16 @@ Label 12–14px mid-gray, value 30–48px weight 600 ink with tight tracking. Re
 - Do not use radii other than 18px (interactive) and 24px (containers), plus 6/10px for small nested elements.
 - Do not drop the hairline border on glass — blur alone does not define the edge.
 - Do not stack many blurred layers inside each other; one level of glass per region (performance and legibility).
+- Do not animate `box-shadow`, `filter` or layout properties on large elements — it drains battery on phones.
+- Do not use Geist Mono or uppercase for long sentences.
 - Do not set body text below 14px or muted text darker than `#9b9ca6`.
 
 ## Surfaces
 
 | Level | Name | Value | Purpose |
 |-------|------|-------|---------|
-| 0 | Backdrop | `#0b0d12` + ambient light | Page background |
-| 1 | Rail | `rgba(15,17,23,0.45)` + blur | Navigation |
+| 0 | Backdrop | `#07080d` + aurora + HUD grid | Page background |
+| 1 | Rail / Dock | `rgba(15,17,23,0.45)` + blur | Navigation |
 | 2 | Glass card | `rgba(28,30,38,0.55)` + blur | Primary content containers |
 | 3 | Glass fill | `rgba(255,255,255,0.06)` | Inputs, chips, secondary buttons inside cards |
 | 4 | Modal | `rgba(22,24,31,0.88)` + blur | Dialogs above everything |
@@ -200,34 +228,35 @@ Label 12–14px mid-gray, value 30–48px weight 600 ink with tight tracking. Re
 - **Card:** `inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.3)`
 - **Clickable row (hover):** border ink + `translateY(-1px)` + `inset 0 1px 0 rgba(255,255,255,0.1), 0 12px 36px rgba(0,0,0,0.45)`
 - **Button (primary):** `0 4px 16px rgba(0,0,0,0.35)`
-- **Input (focus):** accent ring `0 0 0 3px rgba(91,140,255,0.25)`
+- **Input (focus):** accent ring `0 0 0 3px rgba(56,189,248,0.25)`
+- **Mobile dock:** `inset 0 1px 0 rgba(125,211,252,0.16), 0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.4)`
 
 ## Imagery
 
-No photography or illustrations. Atmosphere comes from the ambient light layer, not images. Icons are thin-stroke geometric marks (Lucide-like) at 1.5–2px stroke in ink or mid-gray.
+No photography or illustrations. Atmosphere comes from the aurora and the HUD grid, not images. Icons are thin-stroke geometric marks (Lucide-like) at 1.5–2px stroke in ink or mid-gray.
 
 ## Agent Prompt Guide
 
 **Quick Color Reference**
-- Background: #0b0d12 + ambient radial light
+- Background: #07080d + drifting aurora + faint HUD grid
 - Card/surface: rgba(28,30,38,0.55) + blur(22px) saturate(150%)
 - Primary text: #f4f4f6
 - Muted text: #9b9ca6
 - Border: rgba(255,255,255,0.12)
 - Primary action: #f4f4f6 fill, #0f1117 text
-- Accent: #5b8cff
+- Accent: #38bdf8 · neon gradient #22d3ee → #6366f1 → #a855f7
 - Destructive: #ff5a5f
 
 **Example Component Prompts**
 1. Dashboard stat card: background rgba(28,30,38,0.55), backdrop-filter blur(22px) saturate(150%), 1px solid rgba(255,255,255,0.12) border, 24px radius, shadow inset 0 1px 0 rgba(255,255,255,0.08) + 0 8px 32px rgba(0,0,0,0.35), 20px padding. Label 12px #9b9ca6, value 36px Geist 600 #f4f4f6, -0.025em tracking.
 2. Primary button: background #f4f4f6, text #0f1117, no border, 18px radius, padding 0 16px, 36px height, 14px/500, shadow 0 4px 16px rgba(0,0,0,0.35).
 3. Secondary button: background rgba(255,255,255,0.06), text #f4f4f6, 18px radius, same size as primary; hover rgba(255,255,255,0.12).
-4. Input: background rgba(255,255,255,0.06), text #f4f4f6, placeholder #9b9ca6, 18px radius; focus ring 0 0 0 3px rgba(91,140,255,0.25).
-5. Progress bar: 6px track rgba(255,255,255,0.06); fill linear-gradient(90deg, #3b6dff, #5b8cff) with 0 0 10px rgba(91,140,255,0.5) glow.
+4. Input: background rgba(255,255,255,0.06), text #f4f4f6, placeholder #9b9ca6, 18px radius; focus ring 0 0 0 3px rgba(56,189,248,0.25).
+5. Progress bar: 6px track rgba(255,255,255,0.06); fill linear-gradient(135deg, #22d3ee, #6366f1 55%, #a855f7) with 0 0 10px rgba(56,189,248,0.5) glow.
 
 ## Design Philosophy
 
-(1) **Depth through light, not colour** — the palette stays achromatic; depth comes from translucency, blur and the ambient light behind it. (2) **Radius defines hierarchy** — 18px for interactive elements, 24px for containers. (3) **One accent, used sparingly** — blue means progress or focus; everything else is ink on glass. (4) **Tokens first** — the theme lives in `tokens.css`; components only reference variables, so the whole look can change from one file.
+(1) **Depth through light, not colour** — surfaces stay achromatic; depth comes from translucency, blur and the aurora behind them. (2) **Alive, not busy** — slow, GPU-friendly motion in the navigation and background; content stays still. (3) **Radius defines hierarchy** — 18px for interactive elements, 24px for containers. (4) **One neon accent, used sparingly** — it means progress, focus or "you are here"; everything else is ink on glass. (5) **Mobile first** — the phone is the main device. (6) **Tokens first** — the theme lives in `tokens.css`; components only reference variables, so the whole look can change from one file.
 
 ## Similar Brands
 
@@ -253,15 +282,21 @@ No photography or illustrations. Atmosphere comes from the ambient light layer, 
   --color-mid-gray: #9b9ca6;
   --color-hairline: rgba(255, 255, 255, 0.12);
   --color-ember: #ff5a5f;
-  --color-accent: #5b8cff;
+  --color-accent: #38bdf8;
+  --color-accent-2: #a855f7;
   --color-ok: #34d399;
-  --color-backdrop: #0b0d12;
+  --color-backdrop: #07080d;
+
+  /* Neon */
+  --gradient-accent: linear-gradient(135deg, #22d3ee 0%, #6366f1 55%, #a855f7 100%);
+  --glow-accent: 0 0 18px rgba(56, 189, 248, 0.45);
 
   /* Glass */
-  --glass-blur: blur(22px) saturate(150%);
+  --glass-blur: blur(22px) saturate(160%);
 
   /* Typography — Font Families */
   --font-geist: 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Typography — Scale */
   --text-caption: 12px;
@@ -315,10 +350,10 @@ No photography or illustrations. Atmosphere comes from the ambient light layer, 
   --radius-buttons: 18px;
 
   /* Shadows */
-  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card: inset 0 1px 0 rgba(125, 211, 252, 0.14), 0 8px 32px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
 
   /* Surfaces */
-  --surface-backdrop: #0b0d12;
+  --surface-backdrop: #07080d;
   --surface-rail: rgba(15, 17, 23, 0.45);
   --surface-card: rgba(28, 30, 38, 0.55);
   --surface-input-fill: rgba(255, 255, 255, 0.06);
@@ -339,9 +374,10 @@ No photography or illustrations. Atmosphere comes from the ambient light layer, 
   --color-mid-gray: #9b9ca6;
   --color-hairline: rgba(255, 255, 255, 0.12);
   --color-ember: #ff5a5f;
-  --color-accent: #5b8cff;
+  --color-accent: #38bdf8;
+  --color-accent-2: #a855f7;
   --color-ok: #34d399;
-  --color-backdrop: #0b0d12;
+  --color-backdrop: #07080d;
 
   /* Typography */
   --font-geist: 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -372,6 +408,6 @@ No photography or illustrations. Atmosphere comes from the ambient light layer, 
   --radius-3xl: 24px;
 
   /* Shadows */
-  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card: inset 0 1px 0 rgba(125, 211, 252, 0.14), 0 8px 32px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 ```
