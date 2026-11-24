@@ -1,35 +1,51 @@
 # Ui — Style Reference
-> clinical blueprint on frosted paper
+> frosted glass panels floating over warm ambient light
 
-**Theme:** light
+**Theme:** dark (glass)
 
-Source measurements are normalized; roles and recommendations are interpreted. Font summary lists are independent, not paired by position. HTML examples are reconstructions, not source components.
+Source of truth: `src/Compas.Server/ClientApp/src/styles/tokens.css` (tokens) and `styles/global.css` (components). If this document and the code disagree, the code wins — update this file.
 
-shadcn/ui is a monochromatic design-system workshop: pure white canvas, soft warm-gray surfaces, and large-radius cards floating on hairline borders. The interface is almost entirely achromatic — black text, white surfaces, gray secondary tones — with a single destructive red reserved for error states and nothing else. Typography leans on Geist's geometric neutrality with tight letter-spacing on display sizes, creating a quiet, code-adjacent feel that reads as developer infrastructure rather than consumer product.
+Compás is a dark, glassmorphic workspace: a near-black backdrop lit by soft, blurred pools of warm amber, blue and violet light, with translucent smoked-glass cards floating on top. Every container blurs and saturates what is behind it, so the ambient light bleeds through the UI and gives it depth. The interface stays almost achromatic — light text, translucent surfaces, hairline white borders — with a single electric blue accent for progress and focus, a green for "connected" status, and a red reserved for destructive states. Typography keeps Geist's geometric neutrality with tight tracking on display sizes; the result reads like a calm, premium dashboard rather than a colourful consumer app.
 
 ## Tokens — Colors
 
 | Name | Value | Token | Role |
 |------|-------|-------|------|
-| Canvas | `#f5f5f5` | `--color-canvas` | Page background, muted surface fills, secondary buttons |
-| Paper | `#ffffff` | `--color-paper` | Card surfaces, popover backgrounds, primary button fills |
-| Surface Alt | `#fafafa` | `--color-surface-alt` | Sidebar background, subtle card variant, input resting state |
-| Ink | `#0a0a0a` | `--color-ink` | Primary text, headings, button labels, icon strokes |
-| Ink Soft | `#171717` | `--color-ink-soft` | Filled button backgrounds, secondary text on light surfaces |
-| Mid Gray | `#737373` | `--color-mid-gray` | Muted body text, placeholder text, helper labels, icon fills at rest |
-| Hairline | `#e5e5e5` | `--color-hairline` | Borders, input outlines, card edges, badge outlines |
-| Ember | `#e7000b` | `--color-ember` | Red decorative accent for icons, marks, and small graphic details. Use as a supporting accent, not as a status color |
+| Backdrop | `#0b0d12` | `--color-backdrop` | Page background base, opaque overlays (`--bg`), under the ambient light layer |
+| Glass | `rgba(28, 30, 38, 0.55)` | `--color-paper` | Card surfaces, active nav item, active tabs (always with backdrop blur) |
+| Glass Fill | `rgba(255, 255, 255, 0.06)` | `--color-canvas` | Inputs, secondary buttons, chips, tags, hover fills, progress track |
+| Deep | `#0f1117` | `--color-surface-alt` | Text/icons on light fills (primary button, solid badges), opaque dark hover surfaces |
+| Ink | `#f4f4f6` | `--color-ink` | Primary text, headings, primary button fill, strong borders on hover/selected |
+| Ink Soft | `#e4e4e8` | `--color-ink-soft` | Solid badge fill, primary button hover, secondary light text |
+| Mid Gray | `#9b9ca6` | `--color-mid-gray` | Muted body text, placeholders, helper labels, icons at rest |
+| Hairline | `rgba(255, 255, 255, 0.12)` | `--color-hairline` | Borders, card edges, dividers, ring track |
+| Accent | `#5b8cff` | `--color-accent` | Progress bars, Today progress ring, focus outlines and focus rings. The only chromatic accent |
+| OK | `#34d399` | `--color-ok` | "Connected" status dot (with a soft glow) |
+| Ember | `#ff5a5f` | `--color-ember` | Destructive actions and errors only |
+
+### Ambient light (`body::before`)
+
+A fixed, non-interactive layer behind everything:
+
+```css
+radial-gradient(1100px 700px at 10% -10%, rgba(255, 168, 92, 0.26), transparent 60%),  /* warm amber, top-left */
+radial-gradient(900px 650px at 100% 5%,   rgba(91, 140, 255, 0.24), transparent 60%),  /* blue, top-right */
+radial-gradient(1000px 800px at 55% 115%, rgba(168, 96, 255, 0.16), transparent 60%),  /* violet, bottom */
+linear-gradient(180deg, #11131a 0%, #0b0d12 100%);
+```
+
+It is the only place where large gradients are allowed. It must stay subtle: it tints the glass, it is never content.
 
 ## Tokens — Typography
 
-### Geist — All interface text — body at 14px/400, headings ranging 24–48px/600, buttons at 13–14px/500. Geist's geometric letterforms and uniform stroke width create a developer-tool neutrality; weight 600 at 48px with -0.05em tracking produces tight, confident display headlines that feel engineered rather than editorial. · `--font-geist`
+### Geist — All interface text — body at 14px/400, headings ranging 24–48px/600, buttons at 13–14px/500. Geist's geometric letterforms and uniform stroke width keep the UI neutral against the atmospheric background; weight 600 at large sizes with tight tracking produces confident headlines. · `--font-geist`
 - **Substitute:** Inter
 - **Weights:** 400, 500, 600
 - **Sizes:** 12, 13, 14, 16, 18, 24, 30, 36, 48
 - **Line height:** 1.10, 1.11, 1.20, 1.33, 1.43, 1.50, 1.56, 1.63, 2.00
-- **Letter spacing:** -0.0500em at display (48px), -0.0250em at subheading (24–30px), 0.0500em at caption (12px uppercase). Tracking tightens aggressively at large sizes and loosens slightly at small uppercase labels.
+- **Letter spacing:** -0.0500em at display (48px), -0.0250em at subheading (24–30px), 0.0500em at caption (12px uppercase).
 - **OpenType features:** `"ss01" on, "cv11" on`
-- **Role:** All interface text — body at 14px/400, headings ranging 24–48px/600, buttons at 13–14px/500. Geist's geometric letterforms and uniform stroke width create a developer-tool neutrality; weight 600 at 48px with -0.05em tracking produces tight, confident display headlines that feel engineered rather than editorial.
+- **Rendering:** `-webkit-font-smoothing: antialiased` — important for light text on dark backgrounds.
 
 ### Type Scale
 
@@ -73,12 +89,17 @@ shadcn/ui is a monochromatic design-system workshop: pure white canvas, soft war
 | nested | 10px |
 | buttons | 18px |
 
-### Shadows
+### Shadows & Blur
 
 | Name | Value | Token |
 |------|-------|-------|
-| subtle | `oklab(0.145 -0.00000143796 0.00000340492 / 0.05) 0px 0px ...` | `--shadow-subtle` |
-| subtle-2 | `lab(2.75381 0 0) 0px 0px 0px 0px` | `--shadow-subtle-2` |
+| card | `inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.3)` | `--shadow-card` |
+| card hover (clickable rows) | `inset 0 1px 0 rgba(255,255,255,0.1), 0 12px 36px rgba(0,0,0,0.45)` | — |
+| primary button | `0 4px 16px rgba(0,0,0,0.35)` | — |
+| focus ring | `0 0 0 3px rgba(91,140,255,0.25)` | — |
+| glass blur | `blur(22px) saturate(150%)` | `--glass-blur` |
+
+The inset 1px white highlight on the top edge is what sells the "glass" — it mimics light catching the bevel of the pane.
 
 ### Layout
 
@@ -86,150 +107,134 @@ shadcn/ui is a monochromatic design-system workshop: pure white canvas, soft war
 - **Section gap:** 48-80px
 - **Card padding:** 20px
 - **Element gap:** 8px
+- **Shell:** 88px left rail + fluid main column; below 720px the rail becomes a fixed glass bottom bar.
 
 ## Components
 
 ### Primary Filled Button
-**Role:** High-emphasis action (Submit, Save, Create)
+**Role:** High-emphasis action (Save, Create, Generate)
 
-Background #0a0a0a, text #fafafa, border none, radius 18px, padding 0px 12px (compact) or 8px 16px (comfortable), font 14px Geist weight 500. Height ≈ 36–40px. The dark-on-light inversion is the only chromatic interaction in the system; the fully rounded radius (18px on a ~36px height) produces perfect pill geometry.
+Background `#f4f4f6` (ink), text `#0f1117` (deep), no border, radius 18px, padding 0 16px, min-height 36px, font 14px weight 500, shadow `0 4px 16px rgba(0,0,0,0.35)`. Hover: `#e4e4e8` at 0.88 opacity. A bright pill on dark glass — the strongest element on any screen.
 
-### Secondary Ghost Button
+### Secondary Button
 **Role:** Low-emphasis action (Cancel, Back)
 
-Background #f5f5f5, text #0a0a0a, no border, radius 18px, padding 0px 12px or 8px 16px, font 14px weight 500. Soft gray fill reads as a tonal sibling to the primary rather than a muted alternative — both buttons share shape and type, differing only in lightness.
+Background `rgba(255,255,255,0.06)`, text ink, no border, radius 18px. Hover: `rgba(255,255,255,0.12)`.
 
-### Outline Button
-**Role:** Tertiary action with visible boundary
+### Ghost Button
+**Role:** Tertiary inline action
 
-Background transparent, text #0a0a0a, border 1px solid #e5e5e5, radius 18px, padding 0px 12px or 8px 10px. The hairline border defines the shape without weight — preferred when the button sits inside a card or alongside filled controls.
+Transparent, text mid-gray, padding 0 12px. Hover: glass fill + ink text.
+
+### Destructive Button
+**Role:** Delete, remove, revoke
+
+Transparent, 1px hairline border, text `#ff5a5f`. Hover: glass fill.
 
 ### Card
-**Role:** Content container for blocks, previews, dashboard panels
+**Role:** Content container for panels and dashboard blocks
 
-Background #ffffff, radius 24px, border 1px solid #e5e5e5, shadow oklab(0.145/.05) 0 0 0 1px + rgba(0,0,0,0.1) 0 1px 3px + rgba(0,0,0,0.1) 0 1px 2px -1px, padding 20px. The 1px hairline shadow stacks with a faint elevation layer — cards sit visually raised but remain flat and understated.
+Background `rgba(28,30,38,0.55)`, 1px hairline border (`rgba(255,255,255,0.12)`), radius 24px, `--shadow-card`, padding 20px, `backdrop-filter: blur(22px) saturate(150%)`. Hover brightens the border to `rgba(255,255,255,0.2)`. The same glass treatment applies to record rows and timeline blocks.
 
-### Nested Card Header/Footer
-**Role:** Header or footer strip inside a card
+### Modal
+**Role:** Dialogs over content
 
-Asymmetric radius — top corners 24px on header, bottom corners 24px on footer. Padding 20px horizontal, transparent fill. Provides a subtle tonal band within card boundaries without introducing a new color.
+Overlay `rgba(0,0,0,0.5)` with `blur(6px)`. Panel is more opaque than cards — `rgba(22,24,31,0.88)` — so text stays legible over busy content; same border, radius and shadow as cards.
+
+### Sidebar / Bottom Bar
+**Role:** Main navigation
+
+Background `rgba(15,17,23,0.45)` with glass blur and a 1px hairline right border. Active item: glass card surface + card shadow + ink text; inactive: mid-gray, hover glass fill. Brand mark: 40px ink square with deep "C".
 
 ### Input Field
 **Role:** Text entry, search, form controls
 
-Background #f5f5f5 (resting) or transparent (inline), text #0a0a0a, border none at rest with 1px #e5e5e5 on focus, radius 18px, padding 8px 10px, font 14px weight 400. The soft gray fill differentiates the input from the card surface beneath it; focus replaces the fill with a 1px ring.
+Glass fill background, ink text, mid-gray placeholder, radius 18px. Focus: accent focus ring `0 0 0 3px rgba(91,140,255,0.25)`. Native controls render dark thanks to `color-scheme: dark`.
 
-### Badge — Solid
-**Role:** Tag, status pill, counter
+### Badges
+- **Solid:** background `#e4e4e8`, text `#0f1117`, radius 18px, padding 2px 8px, 12px/500. Used for flags and high/urgent priority.
+- **Soft:** glass fill background, ink-soft text.
+- **Outline:** transparent with hairline border.
 
-Background #171717, text #fafafa, radius 18px, padding 2px 8px, font 12px weight 500. Pill-shaped at 18px radius — the minimum height creates a capsule tag.
+### Status Pill
+Glass surface, hairline border, 12px/500 muted text, with a 7px dot: green `#34d399` with glow when connected, ember on error, hairline while loading.
 
-### Badge — Soft
-**Role:** Neutral label, category tag
-
-Background #f5f5f5, text #171717, radius 18px, padding 2px 8px, font 12px weight 500. Same capsule geometry as solid badge, tonal variant.
-
-### Badge — Outline
-**Role:** Subtle tag with no fill
-
-Transparent background, text #0a0a0a, radius 18px, padding 2px 8px. The lightest-weight tag — used when the label is informational rather than categorical.
-
-### Sidebar Surface
-**Role:** Left navigation panel
-
-Background #fafafa, full-height, contained width. Sits one tonal step off the canvas (#f5f5f5) so the navigation reads as a distinct layer without introducing a divider line.
-
-### Breadcrumb Trail
-**Role:** Hierarchical path indicator
-
-Inline text with chevron separators, font 14px weight 400, color #737373 for separators and #0a0a0a for the current segment. No background, no borders — purely typographic hierarchy.
+### Progress
+- **Bar:** 6px track in glass fill; fill is a `#3b6dff → #5b8cff` gradient with `0 0 10px rgba(91,140,255,0.5)` glow.
+- **Ring (Today):** hairline track, accent stroke, round caps.
 
 ### Stat Block
-**Role:** Large numeric metric display
-
-Label in 12–14px uppercase #737373, value in 30–48px weight 600 #0a0a0a with tight tracking. Progress bar or comparison text in 14px #737373. The block relies on typographic scale alone — no card chrome — to establish the metric.
-
-### Search Trigger
-**Role:** Command palette / search input
-
-Background #f5f5f5, text #737373, radius 18px, padding 8px 10px, with a keyboard shortcut indicator (e.g., ⌘K) right-aligned. Functions as both a button and an input affordance.
-
-### Destructive Action
-**Role:** Delete, remove, revoke — error-adjacent interactions
-
-Text or icon in #e7000b against the monochromatic palette. The red is the only chromatic hue in the system and appears exclusively in destructive or error contexts — it never decorates.
+Label 12–14px mid-gray, value 30–48px weight 600 ink with tight tracking. Relies on type scale; sits inside a glass card.
 
 ## Do's and Don'ts
 
 ### Do
-- Use #0a0a0a on #ffffff for filled buttons — the dark inversion is the only primary action treatment.
-- Maintain 18px radius on all buttons, inputs, and badges for perfect pill geometry; use 24px radius only on cards.
-- Set display headlines at 48px/600 with -0.0500em tracking — Geist's geometric weight at this size with aggressive tightening produces the engineered headline voice.
-- Reserve #e7000b exclusively for destructive states; never use it for decoration, branding, or non-error emphasis.
-- Stack card shadows as 1px hairline + 1px + 2px offset — the combined effect is a barely-perceptible elevation that reads as 'card' without drama.
-- Use #f5f5f5 for secondary surfaces and inputs; use #fafafa for sidebar and subtle card variants — the three-tone surface stack (canvas → soft → paper) creates layering without borders.
+- Put every container on glass: translucent paper + hairline border + `--glass-blur` + `--shadow-card`.
+- Keep the ambient light layer as the only large gradient; let it show through the glass.
+- Use `#f4f4f6` pills with dark text for primary actions — they must be the brightest element on screen.
+- Use `#5b8cff` only for progress, focus and the current/selected state indicators.
+- Reserve `#ff5a5f` exclusively for destructive actions and errors.
+- Make overlays (modals, popovers over content) more opaque than cards so they stay readable.
+- Use colour tokens, never literals — in TSX/SVG too (`style={{ stroke: "var(--color-accent)" }}`).
 
 ### Don't
-- Do not introduce chromatic brand colors beyond #e7000b — the monochromatic palette is the system.
-- Do not use border-radius values other than 18px (interactive) or 24px (containers); avoid square corners on any element.
-- Do not skip the 1px hairline border on cards — the shadow alone does not define the card edge in this system.
-- Do not set body text below 14px or above #737373 lightness — the type scale is deliberately compact.
-- Do not apply gradients, colored shadows, or accent fills — every surface is a solid tone.
-- Do not use letter-spacing wider than 0.05em or tighter than -0.05em; tracking outside this range breaks the typographic system.
-- Do not mix filled and outline buttons of the same size in a single row without visual rhythm — alternate ghost or secondary variants.
+- Do not introduce new chromatic colours beyond accent, OK and ember (project/calendar colours chosen by the user are data, not theme).
+- Do not use black-based rgba (`rgba(10,10,10,…)`) for fills or rings — invisible on dark; use white-based rgba or tokens.
+- Do not use radii other than 18px (interactive) and 24px (containers), plus 6/10px for small nested elements.
+- Do not drop the hairline border on glass — blur alone does not define the edge.
+- Do not stack many blurred layers inside each other; one level of glass per region (performance and legibility).
+- Do not set body text below 14px or muted text darker than `#9b9ca6`.
 
 ## Surfaces
 
 | Level | Name | Value | Purpose |
 |-------|------|-------|---------|
-| 0 | Canvas | `#f5f5f5` | Page background, broadest layer |
-| 1 | Sidebar | `#fafafa` | Navigation surface, one step lighter than canvas |
-| 2 | Card | `#ffffff` | Primary content container, brightest surface |
-| 3 | Input Fill | `#f5f5f5` | Resting input field, matches canvas tone for subtle differentiation |
+| 0 | Backdrop | `#0b0d12` + ambient light | Page background |
+| 1 | Rail | `rgba(15,17,23,0.45)` + blur | Navigation |
+| 2 | Glass card | `rgba(28,30,38,0.55)` + blur | Primary content containers |
+| 3 | Glass fill | `rgba(255,255,255,0.06)` | Inputs, chips, secondary buttons inside cards |
+| 4 | Modal | `rgba(22,24,31,0.88)` + blur | Dialogs above everything |
 
 ## Elevation
 
-- **Card:** `0 0 0 1px rgba(23,23,23,0.05), 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)`
-- **Button (filled):** `none — relies on tonal contrast, not shadow`
-- **Input (focus):** `1px solid #e5e5e5 ring, no offset shadow`
+- **Card:** `inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.3)`
+- **Clickable row (hover):** border ink + `translateY(-1px)` + `inset 0 1px 0 rgba(255,255,255,0.1), 0 12px 36px rgba(0,0,0,0.45)`
+- **Button (primary):** `0 4px 16px rgba(0,0,0,0.35)`
+- **Input (focus):** accent ring `0 0 0 3px rgba(91,140,255,0.25)`
 
 ## Imagery
 
-Minimal imagery — the system is almost entirely UI. No hero photography, no illustrations, no decorative graphics. Product showcases are rendered as component mockups (cards, inputs, buttons) in a grid, serving as both documentation and visual content. Icons are thin-stroke geometric marks (likely Lucide-derived) at 1.5–2px stroke weight in #0a0a0a or #737373, used sparingly as functional cues. The visual language IS the UI components themselves — the page functions as a living style guide where every visible element is a design token made visible.
+No photography or illustrations. Atmosphere comes from the ambient light layer, not images. Icons are thin-stroke geometric marks (Lucide-like) at 1.5–2px stroke in ink or mid-gray.
 
 ## Agent Prompt Guide
 
 **Quick Color Reference**
-- Canvas/background: #f5f5f5
-- Card/surface: #ffffff
-- Primary text: #0a0a0a
-- Muted text: #737373
-- Border: #e5e5e5
-- primary action: #171717 (filled action)
-- Destructive: #e7000b
+- Background: #0b0d12 + ambient radial light
+- Card/surface: rgba(28,30,38,0.55) + blur(22px) saturate(150%)
+- Primary text: #f4f4f6
+- Muted text: #9b9ca6
+- Border: rgba(255,255,255,0.12)
+- Primary action: #f4f4f6 fill, #0f1117 text
+- Accent: #5b8cff
+- Destructive: #ff5a5f
 
 **Example Component Prompts**
-1. Create a dashboard stat card: white (#ffffff) background, 24px radius, 1px solid #e5e5e5 border, shadow 0 0 0 1px rgba(23,23,23,0.05) + 0 1px 3px rgba(0,0,0,0.1) + 0 1px 2px -1px rgba(0,0,0,0.1), 20px padding. Label in 12px uppercase #737373, value in 36px Geist weight 600 #0a0a0a with -0.025em tracking.
-
-2. Create a filled dark button: background #0a0a0a, text #fafafa, no border, 18px radius, padding 0px 12px, font 14px Geist weight 500. Height 36px. No shadow — tonal contrast only.
-
-3. Create a ghost secondary button: background #f5f5f5, text #0a0a0a, no border, 18px radius, padding 0px 12px, font 14px weight 500. Same dimensions as the filled button for visual parity.
-
-4. Create an input field: background #f5f5f5, text #0a0a0a, placeholder #737373, no border at rest, 18px radius, padding 8px 10px, font 14px weight 400. On focus: 1px solid #e5e5e5 ring with no offset.
-
-5. Create a badge tag: background #171717, text #fafafa, 18px radius (full pill), padding 2px 8px, font 12px Geist weight 500.
+1. Dashboard stat card: background rgba(28,30,38,0.55), backdrop-filter blur(22px) saturate(150%), 1px solid rgba(255,255,255,0.12) border, 24px radius, shadow inset 0 1px 0 rgba(255,255,255,0.08) + 0 8px 32px rgba(0,0,0,0.35), 20px padding. Label 12px #9b9ca6, value 36px Geist 600 #f4f4f6, -0.025em tracking.
+2. Primary button: background #f4f4f6, text #0f1117, no border, 18px radius, padding 0 16px, 36px height, 14px/500, shadow 0 4px 16px rgba(0,0,0,0.35).
+3. Secondary button: background rgba(255,255,255,0.06), text #f4f4f6, 18px radius, same size as primary; hover rgba(255,255,255,0.12).
+4. Input: background rgba(255,255,255,0.06), text #f4f4f6, placeholder #9b9ca6, 18px radius; focus ring 0 0 0 3px rgba(91,140,255,0.25).
+5. Progress bar: 6px track rgba(255,255,255,0.06); fill linear-gradient(90deg, #3b6dff, #5b8cff) with 0 0 10px rgba(91,140,255,0.5) glow.
 
 ## Design Philosophy
 
-shadcn/ui is built on three principles visible in every token: (1) achromatic by default — color is absence, not expression; (2) radius defines hierarchy — 18px for interactive elements, 24px for containers, never anything in between; (3) elevation is whisper-quiet — the card shadow is barely perceptible, relying on 1px hairlines and tonal contrast rather than dramatic drop shadows. The system is designed to be copied, modified, and owned — every value is explicit, every token is simple, and nothing is locked behind abstraction.
+(1) **Depth through light, not colour** — the palette stays achromatic; depth comes from translucency, blur and the ambient light behind it. (2) **Radius defines hierarchy** — 18px for interactive elements, 24px for containers. (3) **One accent, used sparingly** — blue means progress or focus; everything else is ink on glass. (4) **Tokens first** — the theme lives in `tokens.css`; components only reference variables, so the whole look can change from one file.
 
 ## Similar Brands
 
-- **Vercel** — Same monochromatic palette, same Geist/geometric sans pairing, same pill-shaped buttons with tight letter-spacing on display text
-- **Linear** — Identical approach to monochromatic UI with single accent for destructive states, tight typographic tracking, and hairline-bordered cards
-- **Radix UI** — Same developer-tool visual language — neutral surfaces, geometric type, and component-first documentation layout
-- **Tailwind UI** — Matching restrained palette, identical border-radius scale (large radii on containers), and code-adjacent minimal chrome
-- **Cal.com** — Same compact density, same pill-badge system, and the same achromatic-first approach with red reserved for errors
+- **Apple visionOS / macOS** — Frosted materials over ambient content, bright pill controls, inset highlights.
+- **Linear** — Dark achromatic UI, tight typography, single accent.
+- **Raycast** — Dark glass panels with hairline borders and subtle glow.
+- **Arc Browser** — Atmospheric gradient backgrounds behind translucent chrome.
 
 ## Quick Start
 
@@ -237,18 +242,26 @@ shadcn/ui is built on three principles visible in every token: (1) achromatic by
 
 ```css
 :root {
+  color-scheme: dark;
+
   /* Colors */
-  --color-canvas: #f5f5f5;
-  --color-paper: #ffffff;
-  --color-surface-alt: #fafafa;
-  --color-ink: #0a0a0a;
-  --color-ink-soft: #171717;
-  --color-mid-gray: #737373;
-  --color-hairline: #e5e5e5;
-  --color-ember: #e7000b;
+  --color-canvas: rgba(255, 255, 255, 0.06);
+  --color-paper: rgba(28, 30, 38, 0.55);
+  --color-surface-alt: #0f1117;
+  --color-ink: #f4f4f6;
+  --color-ink-soft: #e4e4e8;
+  --color-mid-gray: #9b9ca6;
+  --color-hairline: rgba(255, 255, 255, 0.12);
+  --color-ember: #ff5a5f;
+  --color-accent: #5b8cff;
+  --color-ok: #34d399;
+  --color-backdrop: #0b0d12;
+
+  /* Glass */
+  --glass-blur: blur(22px) saturate(150%);
 
   /* Typography — Font Families */
-  --font-geist: 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-geist: 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Typography — Scale */
   --text-caption: 12px;
@@ -290,16 +303,8 @@ shadcn/ui is built on three principles visible in every token: (1) achromatic by
 
   /* Layout */
   --page-max-width: 1280px;
-  --section-gap: 48-80px;
   --card-padding: 20px;
   --element-gap: 8px;
-
-  /* Border Radius */
-  --radius-md: 6px;
-  --radius-lg: 10px;
-  --radius-xl: 14px;
-  --radius-2xl: 18px;
-  --radius-3xl: 24px;
 
   /* Named Radii */
   --radius-cards: 24px;
@@ -310,14 +315,14 @@ shadcn/ui is built on three principles visible in every token: (1) achromatic by
   --radius-buttons: 18px;
 
   /* Shadows */
-  --shadow-subtle: oklab(0.145 -0.00000143796 0.00000340492 / 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
-  --shadow-subtle-2: lab(2.75381 0 0) 0px 0px 0px 0px;
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
 
   /* Surfaces */
-  --surface-canvas: #f5f5f5;
-  --surface-sidebar: #fafafa;
-  --surface-card: #ffffff;
-  --surface-input-fill: #f5f5f5;
+  --surface-backdrop: #0b0d12;
+  --surface-rail: rgba(15, 17, 23, 0.45);
+  --surface-card: rgba(28, 30, 38, 0.55);
+  --surface-input-fill: rgba(255, 255, 255, 0.06);
+  --surface-modal: rgba(22, 24, 31, 0.88);
 }
 ```
 
@@ -326,40 +331,30 @@ shadcn/ui is built on three principles visible in every token: (1) achromatic by
 ```css
 @theme {
   /* Colors */
-  --color-canvas: #f5f5f5;
-  --color-paper: #ffffff;
-  --color-surface-alt: #fafafa;
-  --color-ink: #0a0a0a;
-  --color-ink-soft: #171717;
-  --color-mid-gray: #737373;
-  --color-hairline: #e5e5e5;
-  --color-ember: #e7000b;
+  --color-canvas: rgba(255, 255, 255, 0.06);
+  --color-paper: rgba(28, 30, 38, 0.55);
+  --color-surface-alt: #0f1117;
+  --color-ink: #f4f4f6;
+  --color-ink-soft: #e4e4e8;
+  --color-mid-gray: #9b9ca6;
+  --color-hairline: rgba(255, 255, 255, 0.12);
+  --color-ember: #ff5a5f;
+  --color-accent: #5b8cff;
+  --color-ok: #34d399;
+  --color-backdrop: #0b0d12;
 
   /* Typography */
-  --font-geist: 'Geist', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-geist: 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Typography — Scale */
   --text-caption: 12px;
-  --leading-caption: 1.33;
-  --tracking-caption: 0.6px;
   --text-body: 14px;
-  --leading-body: 1.43;
   --text-body-lg: 16px;
-  --leading-body-lg: 1.5;
   --text-subheading: 18px;
-  --leading-subheading: 1.56;
   --text-heading-sm: 24px;
-  --leading-heading-sm: 1.33;
-  --tracking-heading-sm: -0.6px;
   --text-heading: 30px;
-  --leading-heading: 1.2;
-  --tracking-heading: -0.75px;
   --text-heading-lg: 36px;
-  --leading-heading-lg: 1.11;
-  --tracking-heading-lg: -0.9px;
   --text-display: 48px;
-  --leading-display: 1.1;
-  --tracking-display: -2.4px;
 
   /* Spacing */
   --spacing-4: 4px;
@@ -373,12 +368,10 @@ shadcn/ui is built on three principles visible in every token: (1) achromatic by
   /* Border Radius */
   --radius-md: 6px;
   --radius-lg: 10px;
-  --radius-xl: 14px;
   --radius-2xl: 18px;
   --radius-3xl: 24px;
 
   /* Shadows */
-  --shadow-subtle: oklab(0.145 -0.00000143796 0.00000340492 / 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.1) 0px 1px 2px -1px;
-  --shadow-subtle-2: lab(2.75381 0 0) 0px 0px 0px 0px;
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 8px 32px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 ```

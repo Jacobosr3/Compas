@@ -583,18 +583,17 @@ function NowCard({
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
           <div style={{ position: "relative", width: 96, height: 96 }}>
             <svg width="96" height="96" viewBox="0 0 96 96" style={{ transform: "rotate(-90deg)" }}>
-              <circle cx="48" cy="48" r="42" fill="none" stroke="#E5E5E5" strokeWidth="6" />
+              <circle cx="48" cy="48" r="42" fill="none" strokeWidth="6" style={{ stroke: "var(--line)" }} />
               <circle
                 cx="48"
                 cy="48"
                 r="42"
                 fill="none"
-                stroke="#0A0A0A"
                 strokeWidth="6"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
                 strokeDashoffset={circumference * (1 - pct)}
-                style={{ transition: "stroke-dashoffset .4s linear" }}
+                style={{ stroke: "var(--color-accent)", transition: "stroke-dashoffset .4s linear" }}
               />
             </svg>
             <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
