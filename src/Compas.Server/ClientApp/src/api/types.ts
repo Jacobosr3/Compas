@@ -183,6 +183,9 @@ export interface WorkoutSessionDto {
   title: string;
   /** Día en formato yyyy-MM-dd. */
   date: string;
+  /** Hora de inicio HH:mm (con ella la sesión está también en el calendario); null = solo el día. */
+  startTime: string | null;
+  durationMinutes: number | null;
   notes: string | null;
   completed: boolean;
   source: string | null;
@@ -203,4 +206,118 @@ export interface CreatedApiTokenDto {
   /** Token en claro: solo se recibe al crearlo. */
   value: string;
   mcpUrl: string;
+}
+
+export type NutritionPhase = "Bulk" | "Maintenance" | "Cut";
+
+export interface UserProfileDto {
+  heightCm: number | null;
+  birthDate: string | null;
+  sex: string | null;
+  activityLevel: string | null;
+  phase: NutritionPhase;
+  phaseStartDate: string | null;
+  targetWeightKg: number | null;
+  targetDate: string | null;
+  notes: string | null;
+}
+
+export interface BodyMeasurementDto {
+  id: number;
+  date: string;
+  weightKg: number | null;
+  bodyFatPct: number | null;
+  waistCm: number | null;
+  chestCm: number | null;
+  hipCm: number | null;
+  armCm: number | null;
+  thighCm: number | null;
+  notes: string | null;
+}
+
+export interface LiftGoalDto {
+  id: number;
+  exerciseName: string;
+  hevyExerciseTemplateId: string | null;
+  targetWeightKg: number;
+  targetReps: number;
+  targetDate: string | null;
+  notes: string | null;
+  achieved: boolean;
+}
+
+export interface TrainingSlotDto {
+  id: number;
+  /** 1 = lunes ... 7 = domingo. */
+  dayOfWeek: number;
+  startTime: string;
+  durationMinutes: number;
+  label: string | null;
+}
+
+export interface TrainingSlotInput {
+  dayOfWeek: number;
+  startTime: string;
+  durationMinutes?: number | null;
+  label?: string | null;
+}
+
+export interface ExerciseRuleDto {
+  id: number;
+  exerciseName: string;
+  repMin: number;
+  repMax: number;
+  incrementKg: number;
+  notes: string | null;
+}
+
+export interface ExerciseRuleInput {
+  exerciseName: string;
+  repMin: number;
+  repMax: number;
+  incrementKg: number;
+  notes?: string | null;
+}
+
+export interface ProfileOverviewDto {
+  profile: UserProfileDto;
+  measurements: BodyMeasurementDto[];
+  liftGoals: LiftGoalDto[];
+  trainingSlots: TrainingSlotDto[];
+  exerciseRules: ExerciseRuleDto[];
+}
+
+/** Actualización parcial: solo se cambian los campos con valor. */
+export interface UpdateProfileInput {
+  heightCm?: number | null;
+  birthDate?: string | null;
+  sex?: string | null;
+  activityLevel?: string | null;
+  phase?: NutritionPhase | null;
+  phaseStartDate?: string | null;
+  targetWeightKg?: number | null;
+  targetDate?: string | null;
+  notes?: string | null;
+}
+
+export interface BodyMeasurementInput {
+  date: string;
+  weightKg?: number | null;
+  bodyFatPct?: number | null;
+  waistCm?: number | null;
+  chestCm?: number | null;
+  hipCm?: number | null;
+  armCm?: number | null;
+  thighCm?: number | null;
+  notes?: string | null;
+}
+
+export interface LiftGoalInput {
+  exerciseName: string;
+  targetWeightKg: number;
+  targetReps?: number | null;
+  hevyExerciseTemplateId?: string | null;
+  targetDate?: string | null;
+  notes?: string | null;
+  achieved?: boolean | null;
 }

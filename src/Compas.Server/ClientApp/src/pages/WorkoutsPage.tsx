@@ -22,6 +22,13 @@ function fmtDay(date: string): string {
   return d.toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long" });
 }
 
+/** Hora de fin (HH:mm) de una sesión que empieza a `start` y dura `minutes`. */
+function endTime(start: string, minutes: number): string {
+  const [h, m] = start.split(":").map(Number);
+  const total = (h * 60 + m + minutes) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
 export function WorkoutsPage() {
   // Desde la semana pasada hacia delante: lo próximo es lo que se consulta en el gimnasio.
   const from = (() => {
@@ -70,6 +77,7 @@ export function WorkoutsPage() {
                 <h3>{w.title}</h3>
                 <small>
                   {fmtDay(w.date)}
+                  {w.startTime ? ` · ${w.startTime}${w.durationMinutes ? `–${endTime(w.startTime, w.durationMinutes)}` : ""}` : ""}
                   {w.date === today ? " · hoy" : ""}
                 </small>
               </div>

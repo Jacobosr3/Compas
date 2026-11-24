@@ -27,6 +27,12 @@ public class WorkoutSession : IUserOwned
     public string? Notes { get; set; }
     public bool Completed { get; set; }
 
+    /// <summary>Hora de inicio ("HH:mm"); con ella la sesión se coloca como evento en el calendario (y en Google Calendar). Null = solo el día.</summary>
+    public string? StartTime { get; set; }
+    public int? DurationMinutes { get; set; }
+    /// <summary>Evento de calendario vinculado a esta sesión (se crea, mueve y borra con ella); null si no tiene hora.</summary>
+    public int? CalendarEventId { get; set; }
+
     /// <summary>Origen del dato, p. ej. "hevy"; permite que la automatización reescriba sus propias sesiones sin duplicar.</summary>
     public string? Source { get; set; }
     /// <summary>Identificador estable en el origen (p. ej. id de rutina de Hevy + fecha). Con Source forma la clave de upsert.</summary>

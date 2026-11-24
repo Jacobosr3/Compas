@@ -27,6 +27,11 @@ public class CompasDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<AppUser> Users => Set<AppUser>();
     public DbSet<WorkoutSession> WorkoutSessions => Set<WorkoutSession>();
     public DbSet<ApiToken> ApiTokens => Set<ApiToken>();
+    public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+    public DbSet<BodyMeasurement> BodyMeasurements => Set<BodyMeasurement>();
+    public DbSet<LiftGoal> LiftGoals => Set<LiftGoal>();
+    public DbSet<TrainingSlot> TrainingSlots => Set<TrainingSlot>();
+    public DbSet<ExerciseRule> ExerciseRules => Set<ExerciseRule>();
 
     /// <summary>Claves de Data Protection (ver Program.cs): no pertenecen a ningún usuario.</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -45,11 +50,56 @@ public class CompasDbContext : DbContext, IDataProtectionKeyContext
         modelBuilder.Entity<WorkoutSession>().HasQueryFilter(x => x.UserId == CurrentUserId);
         modelBuilder.Entity<ApiToken>().HasQueryFilter(x => x.UserId == CurrentUserId);
 
+        modelBuilder.Entity<UserProfile>().HasQueryFilter(x => x.UserId == CurrentUserId);
+        modelBuilder.Entity<BodyMeasurement>().HasQueryFilter(x => x.UserId == CurrentUserId);
+        modelBuilder.Entity<LiftGoal>().HasQueryFilter(x => x.UserId == CurrentUserId);
+
+        modelBuilder.Entity<TrainingSlot>().HasQueryFilter(x => x.UserId == CurrentUserId);
+        modelBuilder.Entity<ExerciseRule>().HasQueryFilter(x => x.UserId == CurrentUserId);
+
+        modelBuilder.Entity<TrainingSlot>(e =>
+        {
+            e.HasIndex(t => new { t.UserId, t.DayOfWeek });
+            e.Property(t => t.StartTime).IsRequired().HasMaxLength(5);
+            e.Property(t => t.Label).HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<ExerciseRule>(e =>
+        {
+            e.HasIndex(r => r.UserId);
+            e.Property(r => r.ExerciseName).IsRequired().HasMaxLength(200);
+            e.Property(r => r.Notes).HasMaxLength(1000);
+        });
+
+        modelBuilder.Entity<UserProfile>(e =>
+        {
+            e.HasIndex(p => p.UserId).IsUnique(); // un perfil por usuario
+            e.Property(p => p.Phase).HasConversion<string>().HasMaxLength(20);
+            e.Property(p => p.Sex).HasMaxLength(10);
+            e.Property(p => p.ActivityLevel).HasMaxLength(20);
+            e.Property(p => p.Notes).HasMaxLength(2000);
+        });
+
+        modelBuilder.Entity<BodyMeasurement>(e =>
+        {
+            e.HasIndex(m => new { m.UserId, m.Date }).IsUnique(); // un registro por día
+            e.Property(m => m.Notes).HasMaxLength(1000);
+        });
+
+        modelBuilder.Entity<LiftGoal>(e =>
+        {
+            e.HasIndex(g => g.UserId);
+            e.Property(g => g.ExerciseName).IsRequired().HasMaxLength(200);
+            e.Property(g => g.HevyExerciseTemplateId).HasMaxLength(50);
+            e.Property(g => g.Notes).HasMaxLength(1000);
+        });
+
         modelBuilder.Entity<WorkoutSession>(e =>
         {
             e.HasIndex(w => new { w.UserId, w.Date });
             e.HasIndex(w => new { w.UserId, w.Source, w.ExternalId });
             e.Property(w => w.Title).IsRequired().HasMaxLength(200);
+            e.Property(w => w.StartTime).HasMaxLength(5);
             e.Property(w => w.Source).HasMaxLength(50);
             e.Property(w => w.ExternalId).HasMaxLength(200);
         });

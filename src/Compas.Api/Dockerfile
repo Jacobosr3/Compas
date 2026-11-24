@@ -15,6 +15,8 @@ COPY --from=build /app ./
 
 # El proveedor indica el puerto con la variable PORT (Program.cs la lee); por defecto 8080.
 ENV PORT=8080 \
+    # La app trabaja con la hora local del servidor (planificador y eventos de Google Calendar): en la nube, sin esto, sería UTC.
+    TZ=Europe/Madrid \
     ASPNETCORE_ENVIRONMENT=Production \
     DOTNET_EnableDiagnostics=0
 EXPOSE 8080

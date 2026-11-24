@@ -32,8 +32,11 @@ public class WorkoutsController : ControllerBase
         await _workouts.SetCompletedAsync(id, dto.Completed, ct) ? NoContent() : NotFound();
 
     [HttpDelete("workouts/{id:int}")]
-    public async Task<IActionResult> Delete(int id, CancellationToken ct) =>
-        await _workouts.DeleteAsync(id, ct) ? NoContent() : NotFound();
+    public async Task<IActionResult> Delete(int id, CancellationToken ct)
+    {
+        try { return await _workouts.DeleteAsync(id, ct) ? NoContent() : NotFound(); }
+        catch (GoogleException ex) { return Conflict(ex.Message); } // Google no dejó borrar el evento: no se borra nada
+    }
 
     // ---- Tokens del conector ----
 

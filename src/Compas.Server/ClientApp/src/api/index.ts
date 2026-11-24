@@ -16,6 +16,17 @@ import type {
   WorkoutSessionDto,
   ApiTokenDto,
   CreatedApiTokenDto,
+  ProfileOverviewDto,
+  UserProfileDto,
+  UpdateProfileInput,
+  BodyMeasurementDto,
+  BodyMeasurementInput,
+  LiftGoalDto,
+  LiftGoalInput,
+  TrainingSlotDto,
+  TrainingSlotInput,
+  ExerciseRuleDto,
+  ExerciseRuleInput,
 } from "./types";
 
 export const authApi = {
@@ -130,4 +141,18 @@ export const tokensApi = {
   list: () => api.get<ApiTokenDto[]>("/api/tokens"),
   create: (name: string) => api.post<CreatedApiTokenDto>("/api/tokens", { name }),
   revoke: (id: number) => api.delete<void>(`/api/tokens/${id}`),
+};
+
+/** Perfil, medidas corporales y objetivos de fuerza (los lee la automatización de Claude para programar los pesos). */
+export const profileApi = {
+  get: () => api.get<ProfileOverviewDto>("/api/profile"),
+  update: (dto: UpdateProfileInput) => api.put<UserProfileDto>("/api/profile", dto),
+  logMeasurement: (dto: BodyMeasurementInput) => api.post<BodyMeasurementDto>("/api/profile/measurements", dto),
+  removeMeasurement: (id: number) => api.delete<void>(`/api/profile/measurements/${id}`),
+  upsertLiftGoal: (dto: LiftGoalInput) => api.put<LiftGoalDto>("/api/profile/lift-goals", dto),
+  removeLiftGoal: (id: number) => api.delete<void>(`/api/profile/lift-goals/${id}`),
+  /** Sustituye todos los huecos semanales de entreno. */
+  setTrainingSlots: (slots: TrainingSlotInput[]) => api.put<TrainingSlotDto[]>("/api/profile/training-slots", slots),
+  upsertExerciseRules: (rules: ExerciseRuleInput[]) => api.put<ExerciseRuleDto[]>("/api/profile/exercise-rules", rules),
+  removeExerciseRule: (id: number) => api.delete<void>(`/api/profile/exercise-rules/${id}`),
 };

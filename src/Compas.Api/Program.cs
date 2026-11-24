@@ -56,6 +56,7 @@ builder.Services.AddScoped<IPlanningEngine, HeuristicPlanningEngine>();
 builder.Services.AddScoped<PlannerService>();
 builder.Services.AddScoped<ProjectStatusService>();
 builder.Services.AddScoped<WorkoutService>();
+builder.Services.AddScoped<ProfileService>();
 builder.Services.AddScoped<ApiTokenService>(); // tokens personales del conector MCP (/mcp)
 
 // Integración con Google Calendar (credenciales en user-secrets: Google:ClientId / Google:ClientSecret).

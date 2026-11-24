@@ -98,6 +98,51 @@ namespace Compas.Api.Migrations
                     b.ToTable("AppUsers", (string)null);
                 });
 
+            modelBuilder.Entity("Compas.Api.Models.BodyMeasurement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("ArmCm")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("BodyFatPct")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("ChestCm")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("HipCm")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("ThighCm")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double?>("WaistCm")
+                        .HasColumnType("REAL");
+
+                    b.Property<double?>("WeightKg")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date")
+                        .IsUnique();
+
+                    b.ToTable("BodyMeasurements");
+                });
+
             modelBuilder.Entity("Compas.Api.Models.CalendarEvent", b =>
                 {
                     b.Property<int>("Id")
@@ -146,6 +191,40 @@ namespace Compas.Api.Migrations
                     b.HasIndex("ExternalCalendarId", "ExternalId");
 
                     b.ToTable("CalendarEvents");
+                });
+
+            modelBuilder.Entity("Compas.Api.Models.ExerciseRule", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ExerciseName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("IncrementKg")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("RepMax")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("RepMin")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ExerciseRules");
                 });
 
             modelBuilder.Entity("Compas.Api.Models.GoogleAccount", b =>
@@ -227,6 +306,47 @@ namespace Compas.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("GoogleCalendarSelections");
+                });
+
+            modelBuilder.Entity("Compas.Api.Models.LiftGoal", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("Achieved")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ExerciseName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("HevyExerciseTemplateId")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("TargetDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("TargetReps")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<double>("TargetWeightKg")
+                        .HasColumnType("REAL");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("LiftGoals");
                 });
 
             modelBuilder.Entity("Compas.Api.Models.PlanEntry", b =>
@@ -334,6 +454,89 @@ namespace Compas.Api.Migrations
                     b.ToTable("Projects");
                 });
 
+            modelBuilder.Entity("Compas.Api.Models.TrainingSlot", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Label")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StartTime")
+                        .IsRequired()
+                        .HasMaxLength(5)
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "DayOfWeek");
+
+                    b.ToTable("TrainingSlots");
+                });
+
+            modelBuilder.Entity("Compas.Api.Models.UserProfile", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("ActivityLevel")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("BirthDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("HeightCm")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(2000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Phase")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("PhaseStartDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Sex")
+                        .HasMaxLength(10)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("TargetDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("TargetWeightKg")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserProfiles");
+                });
+
             modelBuilder.Entity("Compas.Api.Models.WorkItem", b =>
                 {
                     b.Property<int>("Id")
@@ -409,11 +612,17 @@ namespace Compas.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int?>("CalendarEventId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("Completed")
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTime>("Date")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("DurationMinutes")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("ExercisesJson")
                         .IsRequired()
@@ -428,6 +637,10 @@ namespace Compas.Api.Migrations
 
                     b.Property<string>("Source")
                         .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("StartTime")
+                        .HasMaxLength(5)
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Title")
