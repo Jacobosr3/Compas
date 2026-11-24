@@ -1,9 +1,8 @@
 import { NavLink } from "react-router-dom";
 
-/** Pestañas de la sección Perfil: el perfil y lo que cuelga de él (entrenos y comidas). */
+/** Pestañas de la sección Perfil: el perfil y lo que cuelga de él (comidas). */
 const tabs = [
   { to: "/perfil", label: "Perfil" },
-  { to: "/entrenos", label: "Entrenos" },
   { to: "/comidas", label: "Comidas" },
 ];
 

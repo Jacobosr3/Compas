@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./components/AuthProvider";
 import { useAuth } from "./hooks/useAuth";
 import { LoginPage } from "./pages/LoginPage";
@@ -8,7 +8,6 @@ import { ProjectsPage } from "./pages/ProjectsPage";
 import { ProjectDetailPage } from "./pages/ProjectDetailPage";
 import { AgendaPage } from "./pages/AgendaPage";
 import { BandejaPage } from "./pages/BandejaPage";
-import { WorkoutsPage } from "./pages/WorkoutsPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { MealsPage } from "./pages/MealsPage";
 
@@ -53,7 +52,8 @@ function AuthGate() {
           <Route path="/proyectos/:id" element={<ProjectDetailPage />} />
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/bandeja" element={<BandejaPage />} />
-          <Route path="/entrenos" element={<WorkoutsPage />} />
+          {/* La página Entrenos se quitó: la progresión se aplica en las rutinas de Hevy. */}
+          <Route path="/entrenos" element={<Navigate to="/perfil" replace />} />
           <Route path="/comidas" element={<MealsPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
         </Routes>

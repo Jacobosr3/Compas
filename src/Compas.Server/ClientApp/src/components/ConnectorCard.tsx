@@ -5,7 +5,7 @@ import { useApiData } from "../hooks/useApiData";
 import { errorText } from "../utils/errors";
 import { ConfirmModal } from "./ConfirmModal";
 
-/** Tokens del conector MCP: la URL que se pega en Claude para que una automatización escriba entrenos en Compás. */
+/** Tokens del conector MCP: la URL que se pega en Claude para que las automatizaciones lean y escriban en Compás. */
 export function ConnectorCard() {
   const tokens = useApiData(() => tokensApi.list(), []);
   const [name, setName] = useState("Claude");
@@ -52,8 +52,9 @@ export function ConnectorCard() {
     <section className="card connector-card">
       <h3>Conector para Claude</h3>
       <p className="connector-help">
-        Crea una dirección privada y pégala como conector personalizado (MCP) en Claude. Con ella una automatización puede
-        programar entrenos aquí. Quien tenga la dirección puede escribir en tus entrenos: revócala si se filtra.
+        Crea una dirección privada y pégala como conector personalizado (MCP) en Claude. Con ella las automatizaciones leen
+        tu perfil, ajustan las reglas de progresión y analizan tus comidas. Quien tenga la dirección puede leer y cambiar
+        tus datos: revócala si se filtra.
       </p>
 
       {created && (

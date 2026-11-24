@@ -3,6 +3,7 @@ import { Topbar } from "../components/Topbar";
 import { ProfileTabs } from "../components/ProfileTabs";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { ConnectorCard } from "../components/ConnectorCard";
 import { useApiData } from "../hooks/useApiData";
 import { profileApi } from "../api";
 import type {
@@ -71,6 +72,8 @@ export function ProfilePage() {
           <RulesCard rules={overview.data.exerciseRules} onChanged={overview.reload} onError={setError} />
         </div>
       )}
+
+      <ConnectorCard />
     </main>
   );
 }
