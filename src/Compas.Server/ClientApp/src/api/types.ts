@@ -321,3 +321,80 @@ export interface LiftGoalInput {
   notes?: string | null;
   achieved?: boolean | null;
 }
+
+export type MealStatus = "Pending" | "Proposed" | "Confirmed";
+export type MealType = "breakfast" | "lunch" | "snack" | "dinner" | "other";
+
+export interface MealItemDto {
+  name: string;
+  quantity: string | null;
+  calories: number;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+}
+
+export interface MealDto {
+  id: number;
+  date: string;
+  time: string | null;
+  mealType: MealType | null;
+  note: string | null;
+  hasPhoto: boolean;
+  status: MealStatus;
+  items: MealItemDto[];
+  totalCalories: number;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+  analysisNotes: string | null;
+  createdAt: string;
+  analyzedAt: string | null;
+  confirmedAt: string | null;
+}
+
+export interface MealCreateInput {
+  date: string;
+  time?: string | null;
+  mealType?: MealType | null;
+  note?: string | null;
+  /** Foto ya reducida, en base64 sin prefijo `data:`. */
+  photoBase64?: string | null;
+  photoContentType?: string | null;
+}
+
+export interface MealConfirmInput {
+  items?: MealItemDto[] | null;
+  mealType?: MealType | null;
+  date?: string | null;
+  time?: string | null;
+  note?: string | null;
+}
+
+export interface NutritionDayDto {
+  date: string;
+  meals: number;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+}
+
+export interface NutritionTargetsDto {
+  weightKg: number | null;
+  bmr: number | null;
+  maintenanceCalories: number | null;
+  targetCalories: number | null;
+  phase: NutritionPhase;
+  note: string | null;
+}
+
+export interface NutritionSummaryDto {
+  from: string;
+  to: string;
+  days: NutritionDayDto[];
+  averageCalories: number;
+  pendingMeals: number;
+  proposedMeals: number;
+  targets: NutritionTargetsDto;
+}

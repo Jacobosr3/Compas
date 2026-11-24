@@ -27,6 +27,10 @@ import type {
   TrainingSlotInput,
   ExerciseRuleDto,
   ExerciseRuleInput,
+  MealDto,
+  MealCreateInput,
+  MealConfirmInput,
+  NutritionSummaryDto,
 } from "./types";
 
 export const authApi = {
@@ -155,4 +159,27 @@ export const profileApi = {
   setTrainingSlots: (slots: TrainingSlotInput[]) => api.put<TrainingSlotDto[]>("/api/profile/training-slots", slots),
   upsertExerciseRules: (rules: ExerciseRuleInput[]) => api.put<ExerciseRuleDto[]>("/api/profile/exercise-rules", rules),
   removeExerciseRule: (id: number) => api.delete<void>(`/api/profile/exercise-rules/${id}`),
+};
+
+/** Comidas con foto: Claude estima alimentos y calorías por el conector MCP y el usuario las confirma aquí. */
+export const mealsApi = {
+  list: (from?: string, to?: string) => {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    const qs = params.toString();
+    return api.get<MealDto[]>(`/api/meals${qs ? `?${qs}` : ""}`);
+  },
+  create: (dto: MealCreateInput) => api.post<MealDto>("/api/meals", dto),
+  confirm: (id: number, dto: MealConfirmInput) => api.put<MealDto>(`/api/meals/${id}/confirm`, dto),
+  reanalyze: (id: number) => api.post<MealDto>(`/api/meals/${id}/reanalyze`),
+  remove: (id: number) => api.delete<void>(`/api/meals/${id}`),
+  photoUrl: (id: number) => `/api/meals/${id}/photo`,
+  summary: (from?: string, to?: string) => {
+    const params = new URLSearchParams();
+    if (from) params.set("from", from);
+    if (to) params.set("to", to);
+    const qs = params.toString();
+    return api.get<NutritionSummaryDto>(`/api/meals/summary${qs ? `?${qs}` : ""}`);
+  },
 };

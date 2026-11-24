@@ -52,6 +52,15 @@ const items = [
     ),
   },
   {
+    to: "/comidas",
+    label: "Comidas",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M7 3v8M5 3v5a2 2 0 004 0V3M7 11v10M17 3c-2 2-3 4-3 7h3v11" />
+      </svg>
+    ),
+  },
+  {
     to: "/perfil",
     label: "Perfil",
     icon: (

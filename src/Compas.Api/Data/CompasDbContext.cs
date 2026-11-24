@@ -32,6 +32,7 @@ public class CompasDbContext : DbContext, IDataProtectionKeyContext
     public DbSet<LiftGoal> LiftGoals => Set<LiftGoal>();
     public DbSet<TrainingSlot> TrainingSlots => Set<TrainingSlot>();
     public DbSet<ExerciseRule> ExerciseRules => Set<ExerciseRule>();
+    public DbSet<MealLog> MealLogs => Set<MealLog>();
 
     /// <summary>Claves de Data Protection (ver Program.cs): no pertenecen a ningún usuario.</summary>
     public DbSet<DataProtectionKey> DataProtectionKeys => Set<DataProtectionKey>();
@@ -56,6 +57,21 @@ public class CompasDbContext : DbContext, IDataProtectionKeyContext
 
         modelBuilder.Entity<TrainingSlot>().HasQueryFilter(x => x.UserId == CurrentUserId);
         modelBuilder.Entity<ExerciseRule>().HasQueryFilter(x => x.UserId == CurrentUserId);
+
+        modelBuilder.Entity<MealLog>().HasQueryFilter(x => x.UserId == CurrentUserId);
+
+        modelBuilder.Entity<MealLog>(e =>
+        {
+            e.HasIndex(m => new { m.UserId, m.Date });
+            e.HasIndex(m => new { m.UserId, m.Status });
+            e.Property(m => m.Time).HasMaxLength(5);
+            e.Property(m => m.MealType).HasMaxLength(20);
+            e.Property(m => m.Note).HasMaxLength(500);
+            e.Property(m => m.PhotoContentType).HasMaxLength(50);
+            e.Property(m => m.Status).HasConversion<string>().HasMaxLength(20);
+            e.Property(m => m.ItemsJson).IsRequired();
+            e.Property(m => m.AnalysisNotes).HasMaxLength(1000);
+        });
 
         modelBuilder.Entity<TrainingSlot>(e =>
         {

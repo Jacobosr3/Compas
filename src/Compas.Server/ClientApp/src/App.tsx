@@ -10,6 +10,7 @@ import { AgendaPage } from "./pages/AgendaPage";
 import { BandejaPage } from "./pages/BandejaPage";
 import { WorkoutsPage } from "./pages/WorkoutsPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { MealsPage } from "./pages/MealsPage";
 
 export default function App() {
   return (
@@ -53,6 +54,7 @@ function AuthGate() {
           <Route path="/agenda" element={<AgendaPage />} />
           <Route path="/bandeja" element={<BandejaPage />} />
           <Route path="/entrenos" element={<WorkoutsPage />} />
+          <Route path="/comidas" element={<MealsPage />} />
           <Route path="/perfil" element={<ProfilePage />} />
         </Routes>
       </div>

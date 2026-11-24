@@ -2548,3 +2548,27 @@
 .measure-table th:first-child, .measure-table td:first-child { text-align: left; }
 .measure-table th { color: var(--muted); font-weight: 500; }
 .goal-list li.done b { text-decoration: line-through; opacity: 0.6; }
+
+/* ---- Comidas ---- */
+.meal-grid { display: grid; gap: 16px; margin-bottom: 20px; }
+.meal-list { display: grid; gap: 12px; margin-bottom: 20px; }
+.meal-day { margin: 8px 0 0; font-size: 15px; color: var(--muted); text-transform: capitalize; }
+.meal-card { display: grid; grid-template-columns: 96px 1fr; gap: 12px; }
+.meal-card img, .meal-preview { width: 96px; height: 96px; object-fit: cover; border-radius: var(--radius-nested); background: var(--line); }
+.meal-preview { width: 140px; height: 140px; margin-top: 8px; }
+.meal-card header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.meal-card header h3 { margin: 0; font-size: 16px; }
+.meal-card small { color: var(--muted); display: block; }
+.meal-badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+.meal-badge.proposed { border-color: var(--accent, currentColor); }
+.meal-badge.confirmed { opacity: 0.7; }
+.meal-items { margin: 8px 0 0; padding-left: 18px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.meal-edit-row { display: grid; grid-template-columns: 1fr 90px 70px; gap: 6px; margin-top: 6px; }
+.meal-edit-row input { min-width: 0; width: 100%; }
+.meal-edit-macros { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 6px; margin-top: 4px; }
+.meal-edit-macros input { min-width: 0; width: 100%; }
+.meal-total { margin: 8px 0 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.meal-stats { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 8px 0; font-variant-numeric: tabular-nums; }
+.meal-stats b { font-size: 20px; }
+.meal-stats small { color: var(--muted); display: block; }
+@media (max-width: 560px) { .meal-card { grid-template-columns: 1fr; } .meal-card img { width: 100%; height: 180px; } }

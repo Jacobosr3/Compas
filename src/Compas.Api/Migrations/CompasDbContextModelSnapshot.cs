@@ -349,6 +349,83 @@ namespace Compas.Api.Migrations
                     b.ToTable("LiftGoals");
                 });
 
+            modelBuilder.Entity("Compas.Api.Models.MealLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("AnalysisNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("AnalyzedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("CarbsG")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("FatG")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("ItemsJson")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("MealType")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("TEXT");
+
+                    b.Property<byte[]>("Photo")
+                        .HasColumnType("BLOB");
+
+                    b.Property<string>("PhotoContentType")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double?>("ProteinG")
+                        .HasColumnType("REAL");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Time")
+                        .HasMaxLength(5)
+                        .HasColumnType("TEXT");
+
+                    b.Property<double>("TotalCalories")
+                        .HasColumnType("REAL");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Date");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("MealLogs");
+                });
+
             modelBuilder.Entity("Compas.Api.Models.PlanEntry", b =>
                 {
                     b.Property<int>("Id")

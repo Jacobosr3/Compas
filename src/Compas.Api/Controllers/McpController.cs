@@ -25,13 +25,15 @@ public class McpController : ControllerBase
     private readonly ApiTokenService _tokens;
     private readonly WorkoutService _workouts;
     private readonly ProfileService _profile;
+    private readonly MealService _meals;
     private readonly CurrentUser _currentUser;
 
-    public McpController(ApiTokenService tokens, WorkoutService workouts, ProfileService profile, CurrentUser currentUser)
+    public McpController(ApiTokenService tokens, WorkoutService workouts, ProfileService profile, MealService meals, CurrentUser currentUser)
     {
         _tokens = tokens;
         _workouts = workouts;
         _profile = profile;
+        _meals = meals;
         _currentUser = currentUser;
     }
 
@@ -78,7 +80,9 @@ public class McpController : ControllerBase
                                        + "medidas, objetivos de fuerza, huecos semanales de entreno y reglas de progresión por ejercicio) y list_calendar_events "
                                        + "(bloques ocupados) para no pisar nada. upsert_workout_session programa un entreno con sus pesos objetivo "
                                        + "(idempotente con source + externalId); con startTime también lo coloca en el calendario y en Google Calendar. "
-                                       + "Las horas son siempre las locales del usuario (Europe/Madrid)."
+                                       + "Las horas son siempre las locales del usuario (Europe/Madrid). "
+                                       + "Comidas: list_pending_meals devuelve las fotos pendientes; estima alimentos, cantidades y calorías y guárdalo con "
+                                       + "submit_meal_analysis (solo propone: el usuario confirma en la app). get_nutrition_summary da los totales confirmados."
                 },
                 "ping" => new JsonObject(),
                 "tools/list" => new JsonObject { ["tools"] = Tools() },
@@ -315,6 +319,64 @@ public class McpController : ControllerBase
                 ["type"] = "object",
                 ["required"] = new JsonArray("id"),
                 ["properties"] = new JsonObject { ["id"] = new JsonObject { ["type"] = "integer" } }
+            }),
+        Tool("list_pending_meals",
+            "Comidas que el usuario ha subido con foto y esperan análisis (las más antiguas primero). Devuelve un bloque de texto con los datos "
+            + "(id, fecha, hora, tipo, nota del usuario) y, justo después, las fotos en el mismo orden. Analiza cada una y guarda la estimación "
+            + "con submit_meal_analysis.",
+            new JsonObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JsonObject
+                {
+                    ["limit"] = new JsonObject { ["type"] = "integer", ["description"] = "Máximo de comidas (1-10, por defecto 5)." }
+                }
+            }),
+        Tool("submit_meal_analysis",
+            "Guarda tu estimación de una comida pendiente: lista de alimentos con cantidad y calorías (y macros si puedes). Las calorías y macros "
+            + "totales se calculan sumando los alimentos. La comida queda como propuesta: la confirma siempre el usuario en la app, y solo las "
+            + "confirmadas cuentan en los totales. No se puede modificar una comida ya confirmada.",
+            new JsonObject
+            {
+                ["type"] = "object",
+                ["required"] = new JsonArray("id", "items"),
+                ["properties"] = new JsonObject
+                {
+                    ["id"] = new JsonObject { ["type"] = "integer", ["description"] = "Id de la comida (de list_pending_meals)." },
+                    ["mealType"] = new JsonObject { ["type"] = "string", ["enum"] = new JsonArray("breakfast", "lunch", "snack", "dinner", "other"), ["description"] = "Solo si deduces el tipo de comida; si no, omítelo." },
+                    ["notes"] = new JsonObject { ["type"] = "string", ["description"] = "Supuestos e incertidumbre de la estimación (raciones, aceites, salsas…)." },
+                    ["items"] = new JsonObject
+                    {
+                        ["type"] = "array",
+                        ["items"] = new JsonObject
+                        {
+                            ["type"] = "object",
+                            ["required"] = new JsonArray("name", "calories"),
+                            ["properties"] = new JsonObject
+                            {
+                                ["name"] = new JsonObject { ["type"] = "string", ["description"] = "Alimento, en español." },
+                                ["quantity"] = new JsonObject { ["type"] = "string", ["description"] = "Cantidad estimada, p. ej. \"150 g\" o \"2 unidades\"." },
+                                ["calories"] = new JsonObject { ["type"] = "number", ["description"] = "kcal de esa cantidad." },
+                                ["proteinG"] = new JsonObject { ["type"] = "number" },
+                                ["carbsG"] = new JsonObject { ["type"] = "number" },
+                                ["fatG"] = new JsonObject { ["type"] = "number" }
+                            }
+                        }
+                    }
+                }
+            }),
+        Tool("get_nutrition_summary",
+            "Calorías y macros de las comidas CONFIRMADAS por día entre dos fechas, la media diaria, cuántas comidas esperan análisis o confirmación, "
+            + "y el mantenimiento y objetivo calórico estimados (Mifflin-St Jeor con el perfil, el último peso y la fase: volumen +300 kcal, "
+            + "definición −500 kcal). Por defecto, los últimos 7 días.",
+            new JsonObject
+            {
+                ["type"] = "object",
+                ["properties"] = new JsonObject
+                {
+                    ["from"] = new JsonObject { ["type"] = "string", ["description"] = "yyyy-MM-dd" },
+                    ["to"] = new JsonObject { ["type"] = "string", ["description"] = "yyyy-MM-dd" }
+                }
             })
     };
 
@@ -399,6 +461,43 @@ public class McpController : ControllerBase
                 {
                     var id = args["id"]?.GetValue<int>() ?? throw new ArgumentException("Falta 'id'.");
                     return await _profile.DeleteExerciseRuleAsync(id, ct) ? ToolResult("Borrada.") : ToolResult("No existe esa regla.", isError: true);
+                }
+                case "list_pending_meals":
+                {
+                    var limit = args["limit"]?.GetValue<int>() ?? 5;
+                    var pending = await _meals.PendingAsync(limit, ct);
+                    if (pending.Count == 0) return ToolResult("No hay comidas pendientes de análisis.");
+                    var withPhoto = pending.Where(x => x.Photo is not null).ToList();
+                    var summary = pending.Select(x => new
+                    {
+                        x.Meal.Id, x.Meal.Date, x.Meal.Time, x.Meal.MealType, x.Meal.Note,
+                        photoOrder = x.Photo is null ? (int?)null : withPhoto.IndexOf(x) + 1
+                    });
+                    var content = new JsonArray(new JsonObject
+                    {
+                        ["type"] = "text",
+                        ["text"] = JsonSerializer.Serialize(summary, Json)
+                                   + "\nLas fotos van a continuación, en el orden indicado por photoOrder (las comidas sin foto solo traen la nota)."
+                    });
+                    foreach (var wp in withPhoto)
+                        content.Add(new JsonObject { ["type"] = "image", ["data"] = Convert.ToBase64String(wp.Photo!), ["mimeType"] = wp.ContentType ?? "image/jpeg" });
+                    return new JsonObject { ["content"] = content, ["isError"] = false };
+                }
+                case "submit_meal_analysis":
+                {
+                    var input = args.Deserialize<MealAnalysisInput>(Json) ?? throw new ArgumentException("Argumentos no válidos.");
+                    return ToolResult(JsonSerializer.Serialize(await _meals.SubmitAnalysisAsync(input, ct), Json));
+                }
+                case "get_nutrition_summary":
+                {
+                    var to = DateTime.Today;
+                    var from = to.AddDays(-6);
+                    if (args["from"]?.GetValue<string>() is { Length: > 0 } f)
+                        from = WorkoutService.TryParseDate(f, out var d1) ? d1 : throw new ArgumentException("'from' debe ser yyyy-MM-dd.");
+                    if (args["to"]?.GetValue<string>() is { Length: > 0 } t)
+                        to = WorkoutService.TryParseDate(t, out var d2) ? d2 : throw new ArgumentException("'to' debe ser yyyy-MM-dd.");
+                    if (to < from || (to - from).TotalDays > 366) throw new ArgumentException("Rango no válido (máximo 366 días y 'to' no anterior a 'from').");
+                    return ToolResult(JsonSerializer.Serialize(await _meals.SummaryAsync(from, to, ct), Json));
                 }
                 default:
                     throw new McpException(-32602, $"Herramienta desconocida: {name}");
