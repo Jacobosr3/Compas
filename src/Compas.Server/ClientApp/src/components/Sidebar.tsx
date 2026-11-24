@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
+import { PROFILE_SECTION_PATHS } from "./profileSection";
 import { useAuth } from "../hooks/useAuth";
 import { ConfirmModal } from "./ConfirmModal";
 
@@ -43,24 +44,6 @@ const items = [
     ),
   },
   {
-    to: "/entrenos",
-    label: "Entrenos",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M3 9v6M6 7v10M18 7v10M21 9v6M6 12h12" />
-      </svg>
-    ),
-  },
-  {
-    to: "/comidas",
-    label: "Comidas",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <path d="M7 3v8M5 3v5a2 2 0 004 0V3M7 11v10M17 3c-2 2-3 4-3 7h3v11" />
-      </svg>
-    ),
-  },
-  {
     to: "/perfil",
     label: "Perfil",
     icon: (
@@ -74,6 +57,7 @@ const items = [
 
 export function Sidebar() {
   const auth = useAuth();
+  const { pathname } = useLocation();
   const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   return (
@@ -85,7 +69,9 @@ export function Sidebar() {
             key={item.to}
             to={item.to}
             end={item.to === "/"}
-            className={({ isActive }) => "nav-item" + (isActive ? " active" : "")}
+            className={({ isActive }) =>
+              "nav-item" + ((item.to === "/perfil" ? PROFILE_SECTION_PATHS.includes(pathname) : isActive) ? " active" : "")
+            }
           >
             <span className="i">{item.icon}</span>
             <span>{item.label}</span>

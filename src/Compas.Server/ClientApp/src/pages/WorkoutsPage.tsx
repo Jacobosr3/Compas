@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Topbar } from "../components/Topbar";
+import { ProfileTabs } from "../components/ProfileTabs";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { ConnectorCard } from "../components/ConnectorCard";
 import { useApiData } from "../hooks/useApiData";
@@ -53,6 +54,7 @@ export function WorkoutsPage() {
   return (
     <main className="main">
       <Topbar title="Entrenos" subtitle="Sesiones y pesos programados" status={workouts.status} onRefresh={workouts.reload} />
+      <ProfileTabs />
 
       {workouts.status === "error" && <ConnectionBanner message={workouts.error || ""} />}
       {error && <p className="connector-error">{error}</p>}

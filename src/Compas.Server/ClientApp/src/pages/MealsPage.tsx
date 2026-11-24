@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { Topbar } from "../components/Topbar";
+import { ProfileTabs } from "../components/ProfileTabs";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { useApiData } from "../hooks/useApiData";
@@ -73,6 +74,7 @@ export function MealsPage() {
   return (
     <main className="main">
       <Topbar title="Comidas" subtitle="Foto, estimación de Claude y tu confirmación" status={meals.status} onRefresh={reload} />
+      <ProfileTabs />
 
       {meals.status === "error" && <ConnectionBanner message={meals.error || ""} />}
       {error && <p className="connector-error">{error}</p>}

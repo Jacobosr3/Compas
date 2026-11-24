@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Topbar } from "../components/Topbar";
+import { ProfileTabs } from "../components/ProfileTabs";
 import { ConnectionBanner } from "../components/ConnectionBanner";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { useApiData } from "../hooks/useApiData";
@@ -48,6 +49,7 @@ export function ProfilePage() {
   return (
     <main className="main">
       <Topbar title="Perfil" subtitle="Objetivos y medidas para programar tus pesos" status={overview.status} onRefresh={overview.reload} />
+      <ProfileTabs />
       {overview.status === "error" && <ConnectionBanner message={overview.error || ""} />}
       {error && <p className="connector-error">{error}</p>}
       {overview.status === "loading" && (
