@@ -1,0 +1,19 @@
+{
+  "name": "Compás — Planificador Inteligente",
+  "short_name": "Compás",
+  "description": "Entrenos, comidas y objetivos en un solo sitio.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07080d",
+  "theme_color": "#07080d",
+  "icons": [
+    { "src": "/compas-logo-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/compas-logo-120.png", "sizes": "120x120", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    { "name": "Registrar comida", "url": "/comidas", "icons": [{ "src": "/compas-logo-120.png", "sizes": "120x120", "type": "image/png" }] }
+  ]
+}
