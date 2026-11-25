@@ -3068,3 +3068,64 @@
     --spin: 360deg;
   }
 }
+
+/* ---- Versión móvil (iPhone): ajustes por vista y app instalada ---- */
+.field input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-surface-alt);
+  font: inherit;
+  font-weight: 500;
+}
+@media (max-width: 720px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Hoy: la tarjeta de tarea pasa a dos filas (título arriba; duración y acciones debajo) en vez de apretar el título */
+  .tl-block:not(.break):not(.free) {
+    flex-wrap: wrap;
+    row-gap: 10px;
+    padding: 12px 14px;
+  }
+  .tl-block:not(.break):not(.free) > .tl-main {
+    flex: 1 1 100%;
+  }
+  .tl-name {
+    font-size: 15px;
+    overflow-wrap: anywhere;
+  }
+  .tl-side {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+  }
+  .tl-side .tl-dur {
+    margin-right: auto;
+  }
+  .tl-complete {
+    min-height: 40px;
+    padding: 0 16px;
+  }
+  .tl-move button {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  /* Comidas: foto y tipo a ancho completo (el desplegable se cortaba) */
+  .meal-form .form-grid .field:has(#meal-photo),
+  .meal-form .form-grid .field:has(#meal-type) {
+    grid-column: 1 / -1;
+  }
+  .meal-form select,
+  .meal-form input {
+    min-height: 44px;
+  }
+}
+/* App instalada en la pantalla de inicio: sin rebote elástico que arrastre el fondo */
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+  }
+}

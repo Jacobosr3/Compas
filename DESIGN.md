@@ -114,6 +114,27 @@ The inset 1px cyan-tinted highlight on the top edge is what sells the "glass" �
 - **Shell:** 88px left rail + fluid main column; below 720px the rail becomes a floating glass dock (12px from the sides, 10px + safe area from the bottom, radius 26px). Main bottom padding: `100px + safe area`.
 - **Mobile first:** design and check at 390px wide first. Touch targets ≥ 44px; no horizontal overflow (single-column grids use `minmax(0, 1fr)`, not `1fr`).
 
+### Two versions: phone and desktop
+
+Compás is used on two kinds of device and **every view we build must be designed, built and checked for both** — it is part of "done", not a later polish. One codebase serves both: the phone version is the base and the desktop version is a layer on top, switched by media queries (no separate routes or components unless a view truly cannot adapt).
+
+| | Phone (iPhone, installed as an app) | Desktop |
+|---|---|---|
+| Width | ≤ 720px (design and check at **390×844**) | > 720px (check at **1440×900**) |
+| Navigation | Floating glass dock at the bottom | 88px left rail |
+| Layout | One column, full-width cards; primary info first, actions below it | Main column + right rail, multi-column grids |
+| Input | Touch: targets ≥ 44px, no hover, 16px form fields (iOS zooms below that) | Mouse: hover states (`(hover: hover) and (pointer: fine)` only) |
+| Safe areas | Respect `env(safe-area-inset-*)`; the dock never covers content (bottom padding `100px + safe area`) | n/a |
+
+Rules for every new view:
+- **Phone first, then desktop.** Write the base CSS for the phone and add desktop behaviour afterwards. Phone-specific adjustments go in a `@media (max-width: 720px)` block next to the component's styles (existing ones live in the "Versión móvil" section at the end of `global.css`).
+- **A row that fits on desktop rarely fits on a phone.** When a row mixes a title with actions or metadata (task cards, list items), stack it in two rows on the phone: text on top, actions below. Never let a text column shrink to a few characters.
+- **Forms:** one field per row on the phone unless the fields are short (date + time); give long fields and selects the full width. Never rely on `auto-fit` columns to decide this.
+- **No horizontal overflow** at 390px, with long names (projects, tasks, events) and with empty, loading and error states.
+- **Features that need a tap on the phone** (camera, file picker) must be reachable in one tap; browsers will not open them from code.
+- **The installed app** (`display-mode: standalone`, see `manifest.webmanifest`) has no browser bar and no Safari login: check the view signed in from the home-screen icon too.
+- **Verify with screenshots** at both sizes before committing (Playwright is a devDependency; capture each route at the phone viewport `iPhone 14` and at 1440×900) and mention both in the commit or PR.
+
 ## Components
 
 ### Primary Filled Button
@@ -198,7 +219,7 @@ Label 12–14px mid-gray, value 30–48px weight 600 ink with tight tracking. Re
 - Use `#f4f4f6` pills with dark text for primary actions — they must be the brightest element on screen.
 - Use the neon accent only for progress, focus and the current/selected state.
 - Animate only `transform` and `opacity` (or tiny elements); keep loops slow (≥3s) so the UI feels alive, not busy. Everything must still work with `prefers-reduced-motion` (a global rule disables motion).
-- Check every change at phone width first.
+- Check every change at phone width first, then on desktop — every view has two versions (see "Two versions: phone and desktop").
 - Reserve `#ff5a5f` exclusively for destructive actions and errors.
 - Make overlays (modals, popovers over content) more opaque than cards so they stay readable.
 - Use colour tokens, never literals — in TSX/SVG too (`style={{ stroke: "var(--color-accent)" }}`).

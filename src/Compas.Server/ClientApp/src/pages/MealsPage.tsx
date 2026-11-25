@@ -172,7 +172,7 @@ function UploadCard({
   }
 
   return (
-    <section className="card">
+    <section className="card meal-form">
       <h3>Añadir comida</h3>
       <p className="connector-help">
         Sube una foto del plato. La automatización de Claude la analiza y te propone los alimentos y las calorías; tú los revisas y confirmas.
